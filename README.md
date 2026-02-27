@@ -20,18 +20,24 @@ Aplicación web de visualización de eventos sísmicos migrada a stack moderno.
 
 ## Inicio rápido (Docker)
 
+Para levantar el proyecto completo (Frontend, Backend, Base de Datos y GeoServer) utilizando Docker:
+
 ```bash
-# 1. Levantar toda la infraestructura
-docker compose up -d
+# 1. Navegar al directorio del proyecto nuevo
+cd /home/erecio/Documents/Projects/seismap_2026
 
-# 2. Esperar que el backend pase el health check (~60s)
-docker compose ps
-
-# 3. Acceder
-# Frontend:  http://localhost:3000
-# Backend:   http://localhost:8080/swagger-ui.html
-# GeoServer: http://localhost:8600/geoserver  (admin/geoserver)
+# 2. Construir y levantar toda la infraestructura en segundo plano
+docker compose up -d --build
 ```
+
+Una vez que los contenedores estén corriendo (puede demorar un poco la primera vez construyendo las imágenes de Java y Node), podés acceder a los diferentes servicios en las siguientes URLs:
+
+- **Aplicación Web (Frontend):** [http://localhost:3000](http://localhost:3000)
+- **Backend (API Swagger):** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+- **GeoServer:** [http://localhost:8600/geoserver](http://localhost:8600/geoserver) *(Credenciales: `admin` / `geoserver`)*
+
+> [!NOTE]
+> El Backend se encarga de configurar automáticamente GeoServer (crear workspaces, datastores y publicar las capas WMS) al iniciar. Asegurate de que el backend haya terminado de iniciar completamente para que los mapas carguen correctamente.
 
 ## Desarrollo local
 
