@@ -63,6 +63,19 @@ docker compose logs -f backend
 docker compose logs -f
 ```
 
+### Conectar a la Base de Datos (PostGIS)
+
+Podés conectarte a la base de datos PostgreSQL/PostGIS del contenedor desde cualquier cliente externo (como DBeaver, pgAdmin, DataGrip, etc.) utilizando las siguientes credenciales expuestas en tu red local (puerto `5432`):
+
+- **Host**: `localhost` o `127.0.0.1`
+- **Puerto**: `5432`
+- **Base de Datos**: `seismap`
+- **Usuario**: `seismap`
+- **Contraseña**: `seismap`
+
+> [!NOTE]
+> La base de datos incluye la extensión `postgis` habilitada y expone las vistas espacializadas o vistas materializadas de `eventandaveragemagnitudes` utilizadas por GeoServer.
+
 ## Desarrollo local
 
 ### Backend
