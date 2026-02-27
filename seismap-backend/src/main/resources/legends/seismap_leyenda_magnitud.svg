@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" font-family="Arial, sans-serif" font-size="13">
+  <!-- Title -->
+  <text x="10" y="18" font-weight="bold" font-size="14">Magnitud</text>
+
+    <!-- >10: large red circle -->
+  <circle cx="32" cy="50" r="26" fill="#FF0000" stroke="#555" stroke-width="1"/>
+  <circle cx="32" cy="50" r="3" fill="#333"/>
+  <text x="68" y="55" font-size="13">&gt;10</text>
+
+  <!-- 7.5-10: medium orange circle -->
+  <circle cx="32" cy="100" r="16" fill="#FF7F00" stroke="#555" stroke-width="1"/>
+  <circle cx="32" cy="100" r="2.5" fill="#333"/>
+  <text x="68" y="105" font-size="13">7.5 - 10</text>
+
+  <!-- 5-7.5: small yellow-green circle -->
+  <circle cx="32" cy="132" r="9" fill="#FFFF00" stroke="#555" stroke-width="1"/>
+  <circle cx="32" cy="132" r="2" fill="#333"/>
+  <text x="68" y="136" font-size="13">5 - 7.5</text>
+
+  <!-- 2.5-5: tiny yellow circle -->
+  <circle cx="32" cy="152" r="5" fill="#7FFF00" stroke="#555" stroke-width="1"/>
+  <circle cx="32" cy="152" r="1.5" fill="#333"/>
+  <text x="68" y="156" font-size="13">2.5 - 5</text>
+
+  <!-- <2.5: very tiny circle -->
+  <circle cx="32" cy="167" r="3" fill="#00FF00" stroke="#555" stroke-width="0.8"/>
+  <text x="68" y="171" font-size="13">&lt;2.5</text>
+
+  <!-- No medido: tiny dark dot -->
+  <circle cx="32" cy="179" r="2.5" fill="#7F7F7F"/>
+  <text x="68" y="183" font-size="13">No medido</text>
+</svg>

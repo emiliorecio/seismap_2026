@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="185" font-family="Arial, sans-serif" font-size="13">
+  <!-- Magnitud title -->
+  <text x="10" y="18" font-weight="bold" font-size="14">Magnitud</text>
+
+  <!-- >10: large outline circle -->
+  <circle cx="32" cy="50" r="26" fill="white" stroke="#555" stroke-width="1.5"/>
+  <circle cx="32" cy="50" r="3" fill="#555"/>
+  <text x="68" y="55">&gt;10</text>
+
+  <!-- 7.5-10 -->
+  <circle cx="32" cy="100" r="16" fill="white" stroke="#555" stroke-width="1.5"/>
+  <circle cx="32" cy="100" r="2.5" fill="#555"/>
+  <text x="68" y="105">7.5 - 10</text>
+
+  <!-- 5-7.5 -->
+  <circle cx="32" cy="132" r="9" fill="white" stroke="#555" stroke-width="1.2"/>
+  <circle cx="32" cy="132" r="2" fill="#555"/>
+  <text x="68" y="136">5 - 7.5</text>
+
+  <!-- 2.5-5 -->
+  <circle cx="32" cy="152" r="5" fill="white" stroke="#555" stroke-width="1"/>
+  <circle cx="32" cy="152" r="1.5" fill="#555"/>
+  <text x="68" y="156">2.5 - 5</text>
+
+  <!-- <2.5 -->
+  <circle cx="32" cy="167" r="3" fill="white" stroke="#555" stroke-width="0.8"/>
+  <text x="68" y="171">&lt;2.5</text>
+
+  <!-- No medido -->
+  <circle cx="32" cy="179" r="2.5" fill="#555"/>
+  <text x="68" y="183">No medido</text>
+
+  <!-- Profundidad title -->
+  <text x="170" y="18" font-weight="bold" font-size="14">Profundidad(km)</text>
+
+  <!-- <30: red -->
+  <circle cx="182" cy="45" r="7" fill="#F44336" stroke="#B71C1C" stroke-width="0.5"/>
+  <text x="198" y="49">&lt;30</text>
+
+  <!-- 30-70: purple -->
+  <circle cx="182" cy="70" r="7" fill="#9C27B0" stroke="#6A1B9A" stroke-width="0.5"/>
+  <text x="198" y="74">30-70</text>
+
+  <!-- 70-300: yellow -->
+  <circle cx="182" cy="95" r="7" fill="#FFEB3B" stroke="#F9A825" stroke-width="0.5"/>
+  <text x="198" y="99">70-300</text>
+
+  <!-- >300: blue -->
+  <circle cx="182" cy="120" r="7" fill="#2196F3" stroke="#1565C0" stroke-width="0.5"/>
+  <text x="198" y="124">&gt;300</text>
+</svg>
