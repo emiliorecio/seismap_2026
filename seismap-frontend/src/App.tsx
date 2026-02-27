@@ -6,7 +6,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<MainLayout />} />
-      <Route path="/admin" element={<AdminPage />} />
+      {import.meta.env.MODE === 'development' && <Route path="/admin" element={<AdminPage />} />}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

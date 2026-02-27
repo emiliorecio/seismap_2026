@@ -7,8 +7,6 @@ services:
       POSTGRES_DB: seismap
       POSTGRES_USER: seismap
       POSTGRES_PASSWORD: seismap
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,7 +17,7 @@ services:
 
   # GeoServer (for WMS/WFS layer rendering)
   geoserver:
-    image: kartoza/geoserver:2.26.1
+    image: kartoza/geoserver:2.28.2
     container_name: seismap-geoserver
     environment:
       GEOSERVER_ADMIN_USER: admin
@@ -34,8 +32,6 @@ services:
         -Xms256m -Xmx1g
         -DGEOSERVER_CSRF_DISABLED=true
         -Dorg.geowebcache.default.max.concurrent.connections=32
-    ports:
-      - "8600:8080"
     volumes:
       - geoserver_data:/opt/geoserver/data_dir
       - ./controlflow.properties:/opt/geoserver/data_dir/controlflow.properties
@@ -55,10 +51,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: seismap
       SEISMAP_GEOSERVER_URL: http://geoserver:8080/geoserver
       SEISMAP_DATA_FILES_DIRECTORY: /app/data
+      SPRING_PROFILES_ACTIVE: ${APP_PROFILE:-prod}
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
-    ports:
-      - "8080:8080"
-      - "5005:5005"
     volumes:
       - ./data:/app/data:ro
     depends_on:
@@ -76,7 +70,11 @@ services:
     build:
       context: ./seismap-frontend
       dockerfile: Dockerfile
+      args:
+        APP_PROFILE: ${APP_PROFILE:-production}
     container_name: seismap-frontend
+    environment:
+      APP_PROFILE: ${APP_PROFILE:-production}
     ports:
       - "3000:80"
     depends_on:

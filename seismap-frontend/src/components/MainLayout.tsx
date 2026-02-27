@@ -161,11 +161,13 @@ const MainLayout: React.FC = () => {
                         </IconButton>
                     </Tooltip>
 
-                    <Tooltip title="Administración">
-                        <IconButton color="inherit" component={Link} to="/admin" size="small">
-                            <AdminPanelSettingsIcon />
-                        </IconButton>
-                    </Tooltip>
+                    {import.meta.env.MODE === 'development' && (
+                        <Tooltip title="Administración">
+                            <IconButton color="inherit" component={Link} to="/admin" size="small">
+                                <AdminPanelSettingsIcon />
+                            </IconButton>
+                        </Tooltip>
+                    )}
                 </Toolbar>
             </AppBar>
 

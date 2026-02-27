@@ -1,0 +1,6 @@
+services:
+  test:
+    image: alpine
+    command: sleep 10
+    ports:
+      - "${TEST_PORT}"

@@ -33,11 +33,27 @@ docker compose up -d --build
 Una vez que los contenedores estén corriendo (puede demorar un poco la primera vez construyendo las imágenes de Java y Node), podés acceder a los diferentes servicios en las siguientes URLs:
 
 - **Aplicación Web (Frontend):** [http://localhost:3000](http://localhost:3000)
-- **Backend (API Swagger):** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
-- **GeoServer:** [http://localhost:8600/geoserver](http://localhost:8600/geoserver) *(Credenciales: `admin` / `geoserver`)*
-
-> [!NOTE]
+- **Backend (API Swagger):** [http://localhost:3000/swagger-ui/](http://localhost:3000/swagger-ui/) *(Requiere Modo Desarrollo)*
+- **GeoServer Web UI:** [http://localhost:3000/geoserver/web/](http://localhost:3000/geoserver/web/) *(Credenciales: `admin` / `geoserver` - Requiere Modo Desarrollo)*
 > El Backend se encarga de configurar automáticamente GeoServer (crear workspaces, datastores y publicar las capas WMS) al iniciar. Asegurate de que el backend haya terminado de iniciar completamente para que los mapas carguen correctamente.
+
+### Modos de Ejecución (Producción vs Desarrollo)
+
+Por defecto, la aplicación se levanta en modo **producción**. Esto significa que las herramientas de desarrollo y administración (Swagger UI, consola web de GeoServer y página de carga de datos) están **bloqueadas y ocultas** por seguridad, forzando a que todo el tráfico pase puramente por el frontend en el puerto 3000.
+
+Para levantar el proyecto en modo **desarrollo** y habilitar el acceso a estas herramientas:
+
+1. Creá o editá el archivo `.env` en la raíz del proyecto (junto a `docker-compose.yml`) y agregá la siguiente variable:
+   ```env
+   APP_PROFILE=development
+   ```
+2. Ejecutá el comando de Docker Compose forzando la reconstrucción del frontend (para inyectar la variable):
+   ```bash
+   docker compose up -d --build
+   ```
+
+Una vez levantado, además de tener el botón de `Administración` en el mapa, vas a poder acceder tranquilamente a Swagger y GeoServer mediante las URLs detalladas arriba.
+Para volver a producción, cambiá la variable a `production` (o borrala) y volvé a correr `docker compose up -d --build`.
 
 ### Apagar el proyecto
 
@@ -142,7 +158,7 @@ seismap/
 │   │   ├── services/       API calls (Axios)
 │   │   ├── store/          Zustand global state
 │   │   └── types/          TypeScript types
-│   └── nginx.conf          Nginx config (producción)
+│   └── nginx.conf.template Nginx config proxy (producción)
 │
 ├── data/                   Archivos .data (no versionados)
 ├── docker-compose.yml      Stack completo
