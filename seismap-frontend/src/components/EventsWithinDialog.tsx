@@ -92,7 +92,11 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
         }
 
         const cqlFilter = encodeURIComponent(cqlParts.join(' AND '));
-        const url = `/geoserver/seismap/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image%2Fpng&TRANSPARENT=true&LAYERS=seismap%3Aeventandaveragemagnitudes_depthlocation&CRS=EPSG%3A3857&STYLES=seismap_circles_depth&WIDTH=1200&HEIGHT=600&BBOX=${minX},-750000,${maxX},0&CQL_FILTER=${cqlFilter}`;
+
+        const isPoints = currentMap?.style?.sld?.includes('points');
+        const profileStyle = isPoints ? 'seismap_points_depth_profile' : 'seismap_circles_depth_profile';
+
+        const url = `/geoserver/seismap/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image%2Fpng&TRANSPARENT=true&LAYERS=seismap%3Aeventandaveragemagnitudes_depthlocation&CRS=EPSG%3A3857&STYLES=${profileStyle}&WIDTH=1200&HEIGHT=600&BBOX=${minX},-750000,${maxX},0&CQL_FILTER=${cqlFilter}`;
 
         setImageUrl(url);
     }, [tab, open, wkt, currentMap]);
