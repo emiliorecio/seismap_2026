@@ -39,6 +39,30 @@ Una vez que los contenedores estén corriendo (puede demorar un poco la primera 
 > [!NOTE]
 > El Backend se encarga de configurar automáticamente GeoServer (crear workspaces, datastores y publicar las capas WMS) al iniciar. Asegurate de que el backend haya terminado de iniciar completamente para que los mapas carguen correctamente.
 
+### Apagar el proyecto
+
+Para detener la ejecución de los contenedores y liberar los puertos, ejecutá el siguiente comando dentro del directorio del proyecto (`seismap_2026`):
+
+```bash
+# Apagar los contenedores conservando los datos de la base de datos (PostgreSQL) y GeoServer
+docker compose down
+```
+
+> [!TIP]
+> Si en algún momento necesitás limpiar todos los volúmenes de datos y arrancar una base de datos 100% en blanco desde cero, podés usar `docker compose down -v`. **Atención:** esto borrará todos los sismos y configuraciones guardadas en la BD local.
+
+### Ver logs (Consola)
+
+Para monitorear o diagnosticar algún problema, podés ver el flujo en tiempo real (logs) del Backend o cualquier otro componente utilizando Docker:
+
+```bash
+# Ver los logs del backend y seguirlos en vivo
+docker compose logs -f backend
+
+# Para ver todos los servicios al mismo tiempo
+docker compose logs -f
+```
+
 ## Desarrollo local
 
 ### Backend
