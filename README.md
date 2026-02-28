@@ -75,6 +75,9 @@ Para monitorear o diagnosticar algún problema, podés ver el flujo en tiempo re
 # Ver los logs del backend y seguirlos en vivo
 docker compose logs -f backend
 
+# Ver los logs del frontend y seguirlos en vivo
+docker compose logs -f frontend
+
 # Para ver todos los servicios al mismo tiempo
 docker compose logs -f
 ```
