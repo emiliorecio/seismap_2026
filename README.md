@@ -127,6 +127,7 @@ El proxy de Vite redirige `/api/*` y `/layerServer/*` al backend en `:8080`.
 
 | Variable | Default | Descripción |
 |---|---|---|
+| `APP_PROFILE` | `production` | Perfil de ejecución. `production` oculta Swagger, GeoServer y la página de admin. `development` los habilita. Se aplica al backend (Spring profile) y al frontend (build arg + nginx). |
 | `SPRING_DATASOURCE_URL` | `jdbc:postgresql://postgres:5432/seismap` | URL de conexión a PostgreSQL |
 | `SPRING_DATASOURCE_USERNAME` | `seismap` | Usuario de BD |
 | `SPRING_DATASOURCE_PASSWORD` | `seismap` | Password de BD |
