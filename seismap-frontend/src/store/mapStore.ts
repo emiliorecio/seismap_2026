@@ -17,7 +17,7 @@ export const useMapStore = create<MapStore>((set) => ({
     currentMap: null,
     savedMaps: [],
     dataBounds: null,
-    selectedStyle: 'seismap_default',
+    selectedStyle: 'seismap_circles_magnitude',
 
     setCurrentMap: (map) => set({ currentMap: map }),
     setSavedMaps: (maps) => set({ savedMaps: maps }),

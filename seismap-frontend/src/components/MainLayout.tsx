@@ -9,18 +9,14 @@ import {
     Tabs,
     Tab,
     Tooltip,
-    CircularProgress,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import MapIcon from '@mui/icons-material/Map';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import PolylineIcon from '@mui/icons-material/Polyline';
-import CancelIcon from '@mui/icons-material/Cancel';
 import { Link } from 'react-router-dom';
 import SeismapMapView from './SeismapMapView';
 import MapControlsPanel from './MapControlsPanel';
-import SavedMapsPanel from './SavedMapsPanel';
 import MapLegend from './MapLegend';
 import EventsWithinDialog from './EventsWithinDialog';
 import EventDialog from './EventDialog';
@@ -62,7 +58,7 @@ const MainLayout: React.FC = () => {
                         description: '',
                         zoom: 5,
                         center: { x: -65, y: -32 },
-                        minDateType: 'RELATIVE',
+                        minDateType: 'NONE',
                         minDateRelativeAmount: 1,
                         minDateRelativeUnits: 'YEAR',
                         minDate: '',
@@ -85,7 +81,7 @@ const MainLayout: React.FC = () => {
                         animationSteps: 10,
                         animationStepDuration: 1000,
                         reverseAnimation: false,
-                        style: { id: 0, sld: 'seismap_default', name: 'seismap_default', variables: {} },
+                        style: { id: 0, sld: 'seismap_circles_magnitude', name: 'seismap_circles_magnitude', variables: {} },
                     });
                 }
                 setSavedMaps(maps || []);
@@ -145,22 +141,6 @@ const MainLayout: React.FC = () => {
                         {currentMap?.name ?? 'Seismap'}
                     </Typography>
 
-                    {/* Polygon selection tool */}
-                    <Tooltip title={drawingMode ? 'Cancelar selección' : 'Seleccionar área (polígono)'}>
-                        <IconButton
-                            color={drawingMode ? 'warning' : 'inherit'}
-                            onClick={toggleDrawing}
-                            size="small"
-                            sx={{ mr: 0.5 }}
-                        >
-                            {loadingEvents
-                                ? <CircularProgress size={20} color="inherit" />
-                                : drawingMode
-                                    ? <CancelIcon />
-                                    : <PolylineIcon />}
-                        </IconButton>
-                    </Tooltip>
-
                     {import.meta.env.MODE === 'development' && (
                         <Tooltip title="Administración">
                             <IconButton color="inherit" component={Link} to="/admin" size="small">
@@ -194,14 +174,14 @@ const MainLayout: React.FC = () => {
                     variant="fullWidth"
                     textColor="inherit"
                     indicatorColor="primary"
-                    sx={{ borderBottom: 1, borderColor: 'divider', minHeight: 36 }}
+                    sx={{ borderBottom: 1, borderColor: 'divider', minHeight: 36, display: 'none' }}
                 >
                     <Tab label="Filtros" sx={{ minHeight: 36, py: 0 }} />
                     <Tab label={`Mapas (${savedMaps.length})`} sx={{ minHeight: 36, py: 0 }} />
                 </Tabs>
                 <Box sx={{ flex: 1, overflowY: 'auto' }}>
-                    {tab === 0 && <MapControlsPanel />}
-                    {tab === 1 && <SavedMapsPanel />}
+                    {tab === 0 && <MapControlsPanel drawingMode={drawingMode} loadingEvents={loadingEvents} onToggleDrawing={toggleDrawing} />}
+                    {/* tab === 1 && <SavedMapsPanel /> */}
                 </Box>
             </Drawer>
 
@@ -242,8 +222,7 @@ const MainLayout: React.FC = () => {
                 open={dialogOpen}
                 eventsPage={eventsPage}
                 wkt={currentWkt}
-                onClose={() => setDialogOpen(false)}
-                onClearPolygon={handleClearPolygon}
+                onClose={() => { setDialogOpen(false); handleClearPolygon(); }}
                 onPageChange={(newPage) => {
                     if (currentWkt) {
                         fetchPolygonEvents(currentWkt, newPage);

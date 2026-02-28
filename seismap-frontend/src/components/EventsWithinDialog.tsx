@@ -28,7 +28,6 @@ interface Props {
     eventsPage: Page<EventSummary> | null;
     wkt: string | null;
     onClose: () => void;
-    onClearPolygon: () => void;
     onPageChange: (newPage: number) => void;
 }
 
@@ -39,18 +38,12 @@ function formatDate(iso: string) {
     });
 }
 
-const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, onClearPolygon, onPageChange }) => {
+const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, onPageChange }) => {
     const [tab, setTab] = useState(0);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [lonBounds, setLonBounds] = useState<[string, string]>(['', '']);
 
     const { currentMap } = useMapStore();
-
-    const handleClear = () => {
-        onClearPolygon();
-        onClose();
-        setTab(0);
-    };
 
     // Reset tab on close
     useEffect(() => {
@@ -201,9 +194,6 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
             </DialogContent>
 
             <DialogActions>
-                <Button onClick={handleClear} color="warning" variant="outlined" size="small">
-                    Limpiar selección
-                </Button>
                 <Button onClick={onClose} variant="contained" size="small">
                     Cerrar
                 </Button>

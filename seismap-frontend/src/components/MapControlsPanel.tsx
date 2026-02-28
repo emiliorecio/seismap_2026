@@ -14,12 +14,22 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
+    Button,
+    CircularProgress,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import PolylineIcon from '@mui/icons-material/Polyline';
+import CancelIcon from '@mui/icons-material/Cancel';
 import { useMapStore } from '../store/mapStore';
-import type { DateLimitType, DepthLimitType, MagnitudeLimitType, AnimationType } from '../types/map';
+import type { DateLimitType, DepthLimitType, MagnitudeLimitType } from '../types/map';
 
-const MapControlsPanel: React.FC = () => {
+interface MapControlsPanelProps {
+    drawingMode: boolean;
+    loadingEvents: boolean;
+    onToggleDrawing: () => void;
+}
+
+const MapControlsPanel: React.FC<MapControlsPanelProps> = ({ drawingMode, loadingEvents, onToggleDrawing }) => {
     const { currentMap, updateCurrentMap, selectedStyle, setSelectedStyle } = useMapStore();
 
     if (!currentMap) {
@@ -42,7 +52,7 @@ const MapControlsPanel: React.FC = () => {
                     <Typography variant="subtitle2">Fecha</Typography>
                 </AccordionSummary>
                 <AccordionDetails sx={{ pt: 0 }}>
-                    <Stack spacing={1}>
+                    <Stack spacing={3}>
                         <FormControl size="small" fullWidth>
                             <InputLabel>Tipo mín.</InputLabel>
                             <Select<DateLimitType>
@@ -143,7 +153,7 @@ const MapControlsPanel: React.FC = () => {
                     <Typography variant="subtitle2">Profundidad (km)</Typography>
                 </AccordionSummary>
                 <AccordionDetails sx={{ pt: 0 }}>
-                    <Stack spacing={1}>
+                    <Stack spacing={3}>
                         <FormControl size="small" fullWidth>
                             <InputLabel>Tipo mín.</InputLabel>
                             <Select<DepthLimitType>
@@ -200,7 +210,7 @@ const MapControlsPanel: React.FC = () => {
                     <Typography variant="subtitle2">Magnitud</Typography>
                 </AccordionSummary>
                 <AccordionDetails sx={{ pt: 0 }}>
-                    <Stack spacing={1}>
+                    <Stack spacing={3}>
                         <FormControl size="small" fullWidth>
                             <InputLabel>Tipo mín.</InputLabel>
                             <Select<MagnitudeLimitType>
@@ -253,7 +263,7 @@ const MapControlsPanel: React.FC = () => {
 
             <Divider />
 
-            {/* Animation */}
+            {/* Animation (Hidden for now)
             <Accordion disableGutters elevation={0} sx={{ background: 'transparent' }}>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <Typography variant="subtitle2">Animación</Typography>
@@ -285,6 +295,7 @@ const MapControlsPanel: React.FC = () => {
             </Accordion>
 
             <Divider />
+            */}
 
             {/* Style Selector */}
             <Accordion disableGutters elevation={0} sx={{ background: 'transparent' }}>
@@ -299,7 +310,7 @@ const MapControlsPanel: React.FC = () => {
                             label="Estilo"
                             onChange={(e) => setSelectedStyle(e.target.value)}
                         >
-                            <MenuItem value="seismap_default">Por defecto</MenuItem>
+                            <MenuItem value="seismap_default" sx={{ display: 'none' }}>Por defecto</MenuItem>
                             <MenuItem value="seismap_circles_magnitude">Círculos — Magnitud</MenuItem>
                             <MenuItem value="seismap_circles_depth">Círculos — Profundidad</MenuItem>
                             <MenuItem value="seismap_circles_age">Círculos — Antigüedad</MenuItem>
@@ -310,6 +321,22 @@ const MapControlsPanel: React.FC = () => {
                     </FormControl>
                 </AccordionDetails>
             </Accordion>
+
+            <Divider />
+
+            <Box sx={{ p: 1.5 }}>
+                <Button
+                    fullWidth
+                    variant={drawingMode ? 'outlined' : 'contained'}
+                    color={drawingMode ? 'warning' : 'primary'}
+                    size="small"
+                    startIcon={loadingEvents ? <CircularProgress size={16} color="inherit" /> : drawingMode ? <CancelIcon /> : <PolylineIcon />}
+                    onClick={onToggleDrawing}
+                    disabled={loadingEvents}
+                >
+                    {drawingMode ? 'Cancelar selección' : 'Seleccionar área'}
+                </Button>
+            </Box>
 
         </Box>
     );

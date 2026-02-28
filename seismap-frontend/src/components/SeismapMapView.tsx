@@ -51,6 +51,7 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
     const olMapRef = useRef<Map | null>(null);
     const wmsLayerRef = useRef<ImageLayer<ImageWMS> | null>(null);
     const drawRef = useRef<Draw | null>(null);
+    const drawEndTimeRef = useRef<number>(0);
     const vectorSourceRef = useRef<VectorSource<Feature<Geometry>>>(new VectorSource());
 
     // ── Initialize map ─────────────────────────────────────────────
@@ -97,8 +98,9 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
 
         // Map click handler for GetFeatureInfo
         map.on('singleclick', (evt) => {
-            // If we are drawing, don't trigger layer info click
+            // If we are drawing, or just finished drawing, don't trigger layer info click
             if (drawRef.current) return;
+            if (Date.now() - drawEndTimeRef.current < 300) return;
 
             const viewResolution = map.getView().getResolution();
             if (!viewResolution) return;
@@ -183,6 +185,7 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
             const wkt = `POLYGON((${wktCoords}))`;
             onPolygonComplete?.(wkt);
             // Deactivate draw after first polygon
+            drawEndTimeRef.current = Date.now();
             map.removeInteraction(draw);
             drawRef.current = null;
         });
