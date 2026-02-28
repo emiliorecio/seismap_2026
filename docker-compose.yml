@@ -77,6 +77,8 @@ services:
       APP_PROFILE: ${APP_PROFILE:-production}
     ports:
       - "3000:80"
+    volumes:
+      - /var/log/nginx:/var/log/nginx
     depends_on:
       backend:
         condition: service_healthy

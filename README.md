@@ -80,6 +80,9 @@ docker compose logs -f frontend
 
 # Para ver todos los servicios al mismo tiempo
 docker compose logs -f
+
+# Para ver todos los conexion en produccions
+tail -f /var/log/nginx/access.log
 ```
 
 ### Conectar a la Base de Datos (PostGIS)
