@@ -51,7 +51,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: seismap
       SEISMAP_GEOSERVER_URL: http://geoserver:8080/geoserver
       SEISMAP_DATA_FILES_DIRECTORY: /app/data
-      SPRING_PROFILES_ACTIVE: ${APP_PROFILE:-prod}
+      SPRING_PROFILES_ACTIVE: ${APP_PROFILE:-production}
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     volumes:
       - ./data:/app/data:ro

@@ -1,0 +1,11 @@
+spring:
+  config:
+    activate:
+      on-profile: "production"
+
+# OpenAPI / Swagger UI
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

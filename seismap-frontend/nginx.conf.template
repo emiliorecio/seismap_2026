@@ -6,6 +6,15 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    set $profile "${APP_PROFILE}";
+
+    # Access log: enabled only in production (visible via `docker logs seismap-frontend`)
+    set $log_enabled "";
+    if ($profile = "production") {
+        set $log_enabled 1;
+    }
+    access_log /var/log/nginx/access.log combined if=$log_enabled;
+
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml
                application/xml application/xml+rss text/javascript;
@@ -23,8 +32,6 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_read_timeout 300s;
     }
-
-    set $profile "${APP_PROFILE}";
 
     location ^~ /swagger-ui/ {
         if ($profile != "development") {
