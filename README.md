@@ -67,6 +67,67 @@ docker compose down
 > [!TIP]
 > Si en algún momento necesitás limpiar todos los volúmenes de datos y arrancar una base de datos 100% en blanco desde cero, podés usar `docker compose down -v`. **Atención:** esto borrará todos los sismos y configuraciones guardadas en la BD local.
 
+## Ejecutar como servicio de Linux (systemd)
+
+Si querés que Seismap arranque como un servicio del sistema al boot, el proyecto ya incluye una unidad `systemd` basada en Docker Compose.
+
+### 1. Ubicar el proyecto en una ruta estable
+
+La unidad incluida apunta por defecto a:
+
+```bash
+/opt/seismap
+```
+
+Si vas a usar otra ruta, el instalador permite cambiarla con `TARGET_DIR`.
+
+### 2. Instalar la unidad
+
+Desde la raíz del proyecto:
+
+```bash
+sudo TARGET_DIR=/home/erecio/Documents/Projects/seismap_2026 ./scripts/install-systemd-service.sh
+```
+
+Si antes copiaste el proyecto a `/opt/seismap`, alcanza con:
+
+```bash
+sudo ./scripts/install-systemd-service.sh
+```
+
+El script:
+
+- copia la unidad a `/etc/systemd/system/seismap.service`
+- ajusta `WorkingDirectory` a la ruta indicada
+- ejecuta `systemctl daemon-reload`
+- deja el servicio habilitado para iniciar con el sistema
+
+### 3. Operarlo
+
+```bash
+sudo systemctl start seismap
+sudo systemctl restart seismap
+sudo systemctl status seismap
+sudo journalctl -u seismap -f
+```
+
+La unidad ejecuta:
+
+```bash
+docker compose up -d --build
+```
+
+al iniciar o recargar el servicio, y:
+
+```bash
+docker compose stop
+```
+
+al detenerlo.
+
+> [!NOTE]
+> Este servicio depende de que Docker esté instalado y levantado. Si cambiás el código o el `docker-compose.yml`, podés aplicar los cambios con `sudo systemctl restart seismap`.
+
 ### Ver logs (Consola)
 
 Para monitorear o diagnosticar algún problema, podés ver el flujo en tiempo real (logs) del Backend o cualquier otro componente utilizando Docker:
