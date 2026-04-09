@@ -35,11 +35,12 @@ Una vez que los contenedores estén corriendo (puede demorar un poco la primera 
 - **Aplicación Web (Frontend):** [http://localhost:3000](http://localhost:3000)
 - **Backend (API Swagger):** [http://localhost:3000/swagger-ui/](http://localhost:3000/swagger-ui/) *(Requiere Modo Desarrollo)*
 - **GeoServer Web UI:** [http://localhost:3000/geoserver/web/](http://localhost:3000/geoserver/web/) *(Credenciales: `admin` / `geoserver` - Requiere Modo Desarrollo)*
+- **Consola de Administración:** [http://localhost:3000/admin](http://localhost:3000/admin) *(Requiere Modo Desarrollo)*
 > El Backend se encarga de configurar automáticamente GeoServer (crear workspaces, datastores y publicar las capas WMS) al iniciar. Asegurate de que el backend haya terminado de iniciar completamente para que los mapas carguen correctamente.
 
 ### Modos de Ejecución (Producción vs Desarrollo)
 
-Por defecto, la aplicación se levanta en modo **producción**. Esto significa que las herramientas de desarrollo y administración (Swagger UI, consola web de GeoServer y página de carga de datos) están **bloqueadas y ocultas** por seguridad, forzando a que todo el tráfico pase puramente por el frontend en el puerto 3000.
+Por defecto, la aplicación se levanta en modo **producción**. Esto significa que las herramientas de desarrollo y administración (Swagger UI, consola web de GeoServer, y la consola de administración `/admin`) están **bloqueadas y ocultas** por seguridad, tanto a nivel de servidor (nginx devuelve 404) como a nivel de cliente (el router de React no registra la ruta).
 
 Para levantar el proyecto en modo **desarrollo** y habilitar el acceso a estas herramientas:
 
@@ -52,7 +53,7 @@ Para levantar el proyecto en modo **desarrollo** y habilitar el acceso a estas h
    docker compose up -d --build
    ```
 
-Una vez levantado, además de tener el botón de `Administración` en el mapa, vas a poder acceder tranquilamente a Swagger y GeoServer mediante las URLs detalladas arriba.
+Una vez levantado, además de tener el botón de `Administración` en el mapa, vas a poder acceder tranquilamente a Swagger, GeoServer y la consola de administración `/admin` mediante las URLs detalladas arriba.
 Para volver a producción, cambiá la variable a `production` (o borrala) y volvé a correr `docker compose up -d --build`.
 
 ### Apagar el proyecto
