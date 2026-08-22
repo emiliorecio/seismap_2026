@@ -16,6 +16,7 @@ import ImageWMS from 'ol/source/ImageWMS';
 import 'ol/ol.css';
 import { useMapStore } from '../store/mapStore';
 import { buildCqlFilter } from '../utils/cqlFilter';
+import MapLegend from './MapLegend';
 
 const DEPTH_LAYER = 'seismap:eventandaveragemagnitudes_depthlocation';
 
@@ -58,7 +59,6 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
 
     const isPoints = currentMap?.style?.sld?.includes('points');
     const profileStyle = isPoints ? 'seismap_points_depth_profile' : 'seismap_circles_depth_profile';
-    const legendUrl = `/api/maps/legend?name=${encodeURIComponent(profileStyle)}`;
 
     // Reset tab on close
     useEffect(() => {
@@ -237,25 +237,18 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
                             </Typography>
                             <Typography variant="body2" color="text.secondary">Este {lonBounds[1]}°</Typography>
                         </Box>
-                        <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                            <Box sx={{ flex: 1, position: 'relative', bgcolor: '#ffffff' }}>
-                                <Box ref={crossSectionMapDivRef} sx={{ width: '100%', height: '100%', cursor: 'pointer' }} />
-                                {crossSectionLoading && (
-                                    <Box sx={{
-                                        position: 'absolute', inset: 0, display: 'flex',
-                                        alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(255,255,255,0.6)',
-                                    }}>
-                                        <CircularProgress />
-                                    </Box>
-                                )}
-                            </Box>
-                            <Box sx={{
-                                width: 170, flexShrink: 0, borderLeft: '1px solid #e0e0e0',
-                                bgcolor: '#ffffff', overflowY: 'auto', p: 1,
-                            }}>
-                                <Box component="img" src={legendUrl} alt="Leyenda" sx={{ width: '100%', display: 'block' }} />
-                            </Box>
+                        <Box sx={{ flex: 1, position: 'relative', bgcolor: '#ffffff' }}>
+                            <Box ref={crossSectionMapDivRef} sx={{ width: '100%', height: '100%', cursor: 'pointer' }} />
+                            {crossSectionLoading && (
+                                <Box sx={{
+                                    position: 'absolute', inset: 0, display: 'flex',
+                                    alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(255,255,255,0.6)',
+                                }}>
+                                    <CircularProgress />
+                                </Box>
+                            )}
                         </Box>
+                        <MapLegend styleName={profileStyle} fixed />
                     </Box>
                 )}
             </DialogContent>

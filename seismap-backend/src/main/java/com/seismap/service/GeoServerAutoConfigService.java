@@ -47,9 +47,12 @@ public class GeoServerAutoConfigService {
     try {
       createWorkspace();
       createDatastore();
-      publishLayer("eventandaveragemagnitudes_live", "location",
+      publishLayer("eventandaveragemagnitudes_live", "eventandaveragemagnitudes",
           "Eventos sísmicos con magnitudes promedio");
-      publishLayer("eventandaveragemagnitudes_live", "depthlocation",
+      // Backed by a dedicated view (V5) that exposes depthlocation as the only
+      // geometry column, so GeoServer's GetFeatureInfo hit-tests against it
+      // instead of defaulting to `location`.
+      publishLayer("eventandaveragemagnitudes_depth_live", "eventandaveragemagnitudes_depthlocation",
           "Eventos sísmicos — vista de profundidad");
       uploadDefaultStyle();
       uploadThemedStyles();
@@ -146,14 +149,7 @@ public class GeoServerAutoConfigService {
 
   // ─── Feature Type (Layer) ────────────────────────────────────────────────────
 
-  private void publishLayer(String tableName, String geometryColumn, String title) {
-    // Strip "_live" suffix for the exposed layer name to avoid breaking the
-    // frontend
-    String logicalTableName = tableName.endsWith("_live") ? tableName.substring(0, tableName.length() - 5) : tableName;
-    String layerName = "location".equals(geometryColumn)
-        ? logicalTableName
-        : logicalTableName + "_" + geometryColumn;
-
+  private void publishLayer(String tableName, String layerName, String title) {
     String uri = "/workspaces/" + props.getWorkspace()
         + "/datastores/" + props.getDatastoreName()
         + "/featuretypes/" + layerName;

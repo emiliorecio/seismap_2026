@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Box, Paper, Typography, IconButton } from '@mui/material';
+import { Box, Paper, Typography, IconButton, Portal } from '@mui/material';
 import Draggable from 'react-draggable';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -7,6 +7,13 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
 interface MapLegendProps {
     styleName: string;
+    /**
+     * Renders into a document.body portal as a viewport-fixed element instead
+     * of an absolutely-positioned child of the nearest positioned ancestor.
+     * Use inside a Dialog/Modal so the legend isn't clipped to its container
+     * and can be dragged anywhere on screen, above the modal backdrop.
+     */
+    fixed?: boolean;
 }
 
 /** Style labels for display in the legend title */
@@ -22,7 +29,7 @@ const STYLE_LABELS: Record<string, string> = {
     seismap_points_depth_profile: 'Profundidad',
 };
 
-const MapLegend: React.FC<MapLegendProps> = ({ styleName }) => {
+const MapLegend: React.FC<MapLegendProps> = ({ styleName, fixed = false }) => {
     const [isExpanded, setIsExpanded] = useState(true);
     const nodeRef = useRef<HTMLDivElement>(null);
 
@@ -31,16 +38,23 @@ const MapLegend: React.FC<MapLegendProps> = ({ styleName }) => {
     const legendUrl = `/api/maps/legend?name=${encodeURIComponent(styleName)}`;
     const label = STYLE_LABELS[styleName] ?? styleName;
 
-    return (
-        <Draggable nodeRef={nodeRef} handle=".drag-handle" bounds="parent">
-            <div ref={nodeRef} style={{ position: 'absolute', top: 100, right: 24, zIndex: 1000 }}>
+    const content = (
+        <Draggable nodeRef={nodeRef} handle=".drag-handle" bounds={fixed ? 'body' : 'parent'}>
+            <div
+                ref={nodeRef}
+                style={
+                    fixed
+                        ? { position: 'fixed', top: 120, right: 32, zIndex: 1350 }
+                        : { position: 'absolute', top: 100, right: 24, zIndex: 1000 }
+                }
+            >
                 <Paper
                     elevation={6}
                     sx={{
                         bgcolor: 'rgba(18, 18, 30, 0.92)',
                         backdropFilter: 'blur(8px)',
                         borderRadius: 2,
-                        minWidth: 160,
+                        minWidth: fixed ? 220 : 160,
                         overflow: 'hidden',
                         display: 'flex',
                         flexDirection: 'column'
@@ -89,7 +103,7 @@ const MapLegend: React.FC<MapLegendProps> = ({ styleName }) => {
                                     display: 'block',
                                     maxWidth: '100%', // Allows it to be as wide as the legend needs
                                     width: 'auto',
-                                    minWidth: 200,   // Make it much larger
+                                    minWidth: fixed ? 260 : 200,   // Make it much larger
                                     height: 'auto',
                                     borderRadius: 1
                                 }}
@@ -103,6 +117,8 @@ const MapLegend: React.FC<MapLegendProps> = ({ styleName }) => {
             </div>
         </Draggable>
     );
+
+    return fixed ? <Portal>{content}</Portal> : content;
 };
 
 export default MapLegend;
