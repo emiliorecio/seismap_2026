@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import type { Page } from '../services/seismap';
 import PlaceIcon from '@mui/icons-material/Place';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { toLonLat } from 'ol/proj';
 import WKT from 'ol/format/WKT';
 import Map from 'ol/Map';
@@ -19,6 +20,22 @@ import { buildCqlFilter } from '../utils/cqlFilter';
 import MapLegend from './MapLegend';
 
 const DEPTH_LAYER = 'seismap:eventandaveragemagnitudes_depthlocation';
+const SIZE_STORAGE_KEY = 'seismap.eventsWithinDialog.size';
+const MIN_WIDTH = 520;
+const MIN_HEIGHT = 400;
+
+function loadStoredSize(): { width: number; height: number } {
+    try {
+        const raw = localStorage.getItem(SIZE_STORAGE_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (typeof parsed.width === 'number' && typeof parsed.height === 'number') return parsed;
+        }
+    } catch {
+        // ignore corrupt/inaccessible storage
+    }
+    return { width: 960, height: Math.round(window.innerHeight * 0.8) };
+}
 
 export interface EventSummary {
     id: number;
@@ -51,9 +68,38 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
     const [tab, setTab] = useState(0);
     const [lonBounds, setLonBounds] = useState<[string, string]>(['', '']);
     const [crossSectionLoading, setCrossSectionLoading] = useState(true);
+    const [size, setSize] = useState(loadStoredSize);
 
     const crossSectionMapDivRef = useRef<HTMLDivElement>(null);
     const crossSectionMapRef = useRef<Map | null>(null);
+
+    const handleResizeStart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startW = size.width;
+        const startH = size.height;
+
+        const onMove = (ev: MouseEvent) => {
+            const width = Math.min(Math.max(startW + (ev.clientX - startX), MIN_WIDTH), window.innerWidth - 32);
+            const height = Math.min(Math.max(startH + (ev.clientY - startY), MIN_HEIGHT), window.innerHeight - 32);
+            setSize({ width, height });
+        };
+        const onUp = () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+            setSize((current) => {
+                try {
+                    localStorage.setItem(SIZE_STORAGE_KEY, JSON.stringify(current));
+                } catch {
+                    // ignore storage errors (private browsing, quota, etc.)
+                }
+                return current;
+            });
+        };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+    };
 
     const { currentMap } = useMapStore();
 
@@ -143,7 +189,11 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
 
         crossSectionMapRef.current = map;
 
+        const resizeObserver = new ResizeObserver(() => map.updateSize());
+        resizeObserver.observe(crossSectionMapDivRef.current);
+
         return () => {
+            resizeObserver.disconnect();
             map.setTarget(undefined);
             crossSectionMapRef.current = null;
         };
@@ -151,8 +201,19 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
 
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
-            PaperProps={{ sx: { bgcolor: 'background.paper', height: '80vh', display: 'flex', flexDirection: 'column' } }}>
+        <Dialog open={open} onClose={onClose} maxWidth={false}
+            PaperProps={{
+                sx: {
+                    bgcolor: 'background.paper',
+                    width: size.width,
+                    height: size.height,
+                    maxWidth: '95vw',
+                    maxHeight: '95vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    position: 'relative',
+                },
+            }}>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1 }}>
                 <PlaceIcon color="primary" />
                 Eventos en el área seleccionada
@@ -258,6 +319,26 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
                     Cerrar
                 </Button>
             </DialogActions>
+
+            <Box
+                onMouseDown={handleResizeStart}
+                title="Arrastrar para redimensionar"
+                sx={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    width: 22,
+                    height: 22,
+                    cursor: 'nwse-resize',
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    justifyContent: 'flex-end',
+                    color: 'text.disabled',
+                    zIndex: (t) => t.zIndex.modal + 1,
+                }}
+            >
+                <DragIndicatorIcon sx={{ fontSize: 18, transform: 'rotate(45deg)', mb: '1px', mr: '1px' }} />
+            </Box>
         </Dialog>
     );
 };
