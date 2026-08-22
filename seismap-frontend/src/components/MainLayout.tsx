@@ -215,6 +215,7 @@ const MainLayout: React.FC = () => {
                     onPolygonComplete={handlePolygonComplete}
                     onClearPolygon={(fn) => { clearPolygonRef.current = fn; }}
                     onPointClick={handlePointClick}
+                    onUsgsPointClick={handleUsgsPointClick}
                 />
                 <MapLegend styleName={selectedStyle} />
 

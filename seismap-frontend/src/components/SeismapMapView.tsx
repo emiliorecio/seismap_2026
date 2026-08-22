@@ -15,6 +15,7 @@ import type { Geometry } from 'ol/geom';
 import 'ol/ol.css';
 import type { SeismapMap } from '../types/map';
 import { buildCqlFilter } from '../utils/cqlFilter';
+import type { UsgsEventProperties } from './UsgsEventDialog';
 
 interface SeismapMapViewProps {
     centerLon?: number;
@@ -28,6 +29,7 @@ interface SeismapMapViewProps {
     onPolygonComplete?: (wkt: string) => void;
     onClearPolygon?: (clear: () => void) => void;
     onPointClick?: (eventId: number) => void;
+    onUsgsPointClick?: (properties: UsgsEventProperties) => void;
 }
 
 const GEOSERVER_WMS_URL = '/geoserver/seismap/wms';
@@ -63,6 +65,7 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
     onPolygonComplete,
     onClearPolygon,
     onPointClick,
+    onUsgsPointClick,
 }) => {
     const mapRef = useRef<HTMLDivElement>(null);
     const olMapRef = useRef<Map | null>(null);
@@ -124,7 +127,10 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
         // Expose clear function to parent
         onClearPolygon?.(() => vectorSourceRef.current.clear());
 
-        // Map click handler for GetFeatureInfo
+        // Map click handler for GetFeatureInfo — checks the local layer first,
+        // then falls back to the USGS layer (if visible) so points from either
+        // catalog respond to clicks instead of only whichever one happens to
+        // have a feature under that pixel on the local layer.
         map.on('singleclick', (evt) => {
             // If we are drawing, or just finished drawing, don't trigger layer info click
             if (drawRef.current) return;
@@ -133,30 +139,52 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
             const viewResolution = map.getView().getResolution();
             if (!viewResolution) return;
 
-            const wmsSource = wmsLayerRef.current?.getSource();
-            if (!wmsSource) return;
+            const localLayer = wmsLayerRef.current;
+            const localUrl = localLayer?.getVisible()
+                ? localLayer.getSource()?.getFeatureInfoUrl(
+                    evt.coordinate,
+                    viewResolution,
+                    'EPSG:900913',
+                    { 'INFO_FORMAT': 'application/json' }
+                )
+                : undefined;
 
-            const url = wmsSource.getFeatureInfoUrl(
-                evt.coordinate,
-                viewResolution,
-                'EPSG:900913',
-                { 'INFO_FORMAT': 'application/json' }
-            );
-
-            if (url) {
-                fetch(url)
+            const queryUsgs = () => {
+                const usgsSource = usgsLayerRef.current;
+                if (!usgsSource?.getVisible()) return;
+                const usgsWmsSource = usgsSource.getSource();
+                const usgsUrl = usgsWmsSource?.getFeatureInfoUrl(
+                    evt.coordinate,
+                    viewResolution,
+                    'EPSG:900913',
+                    { 'INFO_FORMAT': 'application/json' }
+                );
+                if (!usgsUrl) return;
+                fetch(usgsUrl)
                     .then((response) => response.json())
                     .then((data) => {
-                        if (data.features && data.features.length > 0) {
-                            // GeoServer JSON returns properties.id (assuming the view has it)
-                            const eventId = data.features[0].properties.id;
-                            if (eventId && onPointClick) {
-                                onPointClick(eventId);
-                            }
-                        }
+                        const properties = data?.features?.[0]?.properties;
+                        if (properties) onUsgsPointClick?.(properties);
                     })
-                    .catch((err) => console.error('Failed to get feature info', err));
+                    .catch((err) => console.error('Failed to get USGS feature info', err));
+            };
+
+            if (!localUrl) {
+                queryUsgs();
+                return;
             }
+
+            fetch(localUrl)
+                .then((response) => response.json())
+                .then((data) => {
+                    const eventId = data?.features?.[0]?.properties?.id;
+                    if (eventId) {
+                        onPointClick?.(eventId);
+                        return;
+                    }
+                    queryUsgs();
+                })
+                .catch((err) => console.error('Failed to get feature info', err));
         });
 
         return () => {
