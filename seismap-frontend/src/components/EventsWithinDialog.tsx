@@ -21,6 +21,7 @@ import MapLegend from './MapLegend';
 
 const DEPTH_LAYER = 'seismap:eventandaveragemagnitudes_depthlocation';
 const SIZE_STORAGE_KEY = 'seismap.eventsWithinDialog.size';
+const POSITION_STORAGE_KEY = 'seismap.eventsWithinDialog.position';
 const MIN_WIDTH = 520;
 const MIN_HEIGHT = 400;
 
@@ -35,6 +36,19 @@ function loadStoredSize(): { width: number; height: number } {
         // ignore corrupt/inaccessible storage
     }
     return { width: 960, height: Math.round(window.innerHeight * 0.8) };
+}
+
+function loadStoredPosition(): { x: number; y: number } {
+    try {
+        const raw = localStorage.getItem(POSITION_STORAGE_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (typeof parsed.x === 'number' && typeof parsed.y === 'number') return parsed;
+        }
+    } catch {
+        // ignore corrupt/inaccessible storage
+    }
+    return { x: 0, y: 0 };
 }
 
 export interface EventSummary {
@@ -69,6 +83,7 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
     const [lonBounds, setLonBounds] = useState<[string, string]>(['', '']);
     const [crossSectionLoading, setCrossSectionLoading] = useState(true);
     const [size, setSize] = useState(loadStoredSize);
+    const [position, setPosition] = useState(loadStoredPosition);
 
     const crossSectionMapDivRef = useRef<HTMLDivElement>(null);
     const crossSectionMapRef = useRef<Map | null>(null);
@@ -91,6 +106,34 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
             setSize((current) => {
                 try {
                     localStorage.setItem(SIZE_STORAGE_KEY, JSON.stringify(current));
+                } catch {
+                    // ignore storage errors (private browsing, quota, etc.)
+                }
+                return current;
+            });
+        };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+    };
+
+    const handleDragStart = (e: React.MouseEvent) => {
+        // Ignore drags starting on the close/action buttons in the title bar, if any are added later
+        if ((e.target as HTMLElement).closest('button')) return;
+        e.preventDefault();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startPosX = position.x;
+        const startPosY = position.y;
+
+        const onMove = (ev: MouseEvent) => {
+            setPosition({ x: startPosX + (ev.clientX - startX), y: startPosY + (ev.clientY - startY) });
+        };
+        const onUp = () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+            setPosition((current) => {
+                try {
+                    localStorage.setItem(POSITION_STORAGE_KEY, JSON.stringify(current));
                 } catch {
                     // ignore storage errors (private browsing, quota, etc.)
                 }
@@ -212,9 +255,14 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
                     display: 'flex',
                     flexDirection: 'column',
                     position: 'relative',
+                    overflow: 'hidden',
+                    transform: `translate(${position.x}px, ${position.y}px)`,
                 },
             }}>
-            <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1 }}>
+            <DialogTitle
+                onMouseDown={handleDragStart}
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1, cursor: 'grab', userSelect: 'none', '&:active': { cursor: 'grabbing' } }}
+            >
                 <PlaceIcon color="primary" />
                 Eventos en el área seleccionada
                 <Chip label={eventsPage?.totalElements || 0} size="small" color="primary" sx={{ ml: 'auto' }} />
@@ -232,9 +280,9 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
                 <Tab label="Corte Transversal" />
             </Tabs>
 
-            <DialogContent dividers sx={{ p: 0, overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <DialogContent dividers sx={{ p: 0, overflow: 'hidden', flex: 1, minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                 {tab === 0 && (
-                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                    <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                         {!eventsPage || eventsPage.content.length === 0 ? (
                             <Box sx={{ p: 4, textAlign: 'center' }}>
                                 <Typography color="text.secondary">
@@ -290,7 +338,7 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
                 )}
 
                 {tab === 1 && (
-                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                         <Box sx={{ p: 1, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Typography variant="body2" color="text.secondary">Oeste {lonBounds[0]}°</Typography>
                             <Typography variant="body2" color="text.secondary">
@@ -298,7 +346,7 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
                             </Typography>
                             <Typography variant="body2" color="text.secondary">Este {lonBounds[1]}°</Typography>
                         </Box>
-                        <Box sx={{ flex: 1, position: 'relative', bgcolor: '#ffffff' }}>
+                        <Box sx={{ flex: 1, minHeight: 0, position: 'relative', bgcolor: '#ffffff' }}>
                             <Box ref={crossSectionMapDivRef} sx={{ width: '100%', height: '100%', cursor: 'pointer' }} />
                             {crossSectionLoading && (
                                 <Box sx={{
