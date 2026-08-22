@@ -261,8 +261,18 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
                     fetch(usgsUrl)
                         .then((res) => res.json())
                         .then((data2) => {
-                            const properties = data2?.features?.[0]?.properties;
-                            if (properties) onUsgsPointClick?.(properties);
+                            const p = data2?.features?.[0]?.properties;
+                            // This layer's default geometry is depthlocation (X=lon, Y=-depth),
+                            // not the real position — that comes along as a secondary
+                            // geometry-typed property instead.
+                            const coords = p?.location?.coordinates;
+                            if (p && coords) {
+                                onUsgsPointClick?.({
+                                    depth: p.depth, date: p.date, magnitude: p.magnitude,
+                                    magnitude_type: p.magnitude_type, place: p.place, url: p.url,
+                                    longitude: coords[0], latitude: coords[1],
+                                });
+                            }
                         })
                         .catch((err) => console.error('Failed to get USGS cross-section feature info', err));
                 })

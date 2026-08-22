@@ -163,8 +163,16 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
                 fetch(usgsUrl)
                     .then((response) => response.json())
                     .then((data) => {
-                        const properties = data?.features?.[0]?.properties;
-                        if (properties) onUsgsPointClick?.(properties);
+                        const feature = data?.features?.[0];
+                        const p = feature?.properties;
+                        const coords = feature?.geometry?.coordinates;
+                        if (p && coords) {
+                            onUsgsPointClick?.({
+                                depth: p.depth, date: p.date, magnitude: p.magnitude,
+                                magnitude_type: p.magnitude_type, place: p.place, url: p.url,
+                                longitude: coords[0], latitude: coords[1],
+                            });
+                        }
                     })
                     .catch((err) => console.error('Failed to get USGS feature info', err));
             };
