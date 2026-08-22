@@ -107,7 +107,8 @@ public class MapController {
     private String mapToStaticLegendFilename(String styleName) {
         return switch (styleName) {
             case "seismap_circles_magnitude", "seismap_points_magnitude" -> "seismap_leyenda_magnitud.svg";
-            case "seismap_circles_depth", "seismap_points_depth" -> "seismap_leyenda_profundidad.svg";
+            case "seismap_circles_depth", "seismap_points_depth",
+                 "seismap_circles_depth_profile", "seismap_points_depth_profile" -> "seismap_leyenda_profundidad.svg";
             case "seismap_circles_age", "seismap_points_age" -> "seismap_leyenda_antiguedad.svg";
             default -> null;
         };

@@ -18,6 +18,8 @@ const STYLE_LABELS: Record<string, string> = {
     seismap_points_magnitude: 'Puntos — Magnitud',
     seismap_points_depth: 'Puntos — Profundidad',
     seismap_points_age: 'Puntos — Antigüedad',
+    seismap_circles_depth_profile: 'Profundidad',
+    seismap_points_depth_profile: 'Profundidad',
 };
 
 const MapLegend: React.FC<MapLegendProps> = ({ styleName }) => {

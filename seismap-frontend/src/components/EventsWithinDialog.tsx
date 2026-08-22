@@ -11,6 +11,7 @@ import { toLonLat } from 'ol/proj';
 import WKT from 'ol/format/WKT';
 import { useMapStore } from '../store/mapStore';
 import { buildCqlFilter } from '../utils/cqlFilter';
+import MapLegend from './MapLegend';
 
 export interface EventSummary {
     id: number;
@@ -44,6 +45,9 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
     const [lonBounds, setLonBounds] = useState<[string, string]>(['', '']);
 
     const { currentMap } = useMapStore();
+
+    const isPoints = currentMap?.style?.sld?.includes('points');
+    const profileStyle = isPoints ? 'seismap_points_depth_profile' : 'seismap_circles_depth_profile';
 
     // Reset tab on close
     useEffect(() => {
@@ -86,13 +90,10 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
 
         const cqlFilter = encodeURIComponent(cqlParts.join(' AND '));
 
-        const isPoints = currentMap?.style?.sld?.includes('points');
-        const profileStyle = isPoints ? 'seismap_points_depth_profile' : 'seismap_circles_depth_profile';
-
         const url = `/geoserver/seismap/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image%2Fpng&TRANSPARENT=true&LAYERS=seismap%3Aeventandaveragemagnitudes_depthlocation&CRS=EPSG%3A3857&STYLES=${profileStyle}&WIDTH=1200&HEIGHT=600&BBOX=${minX},-750000,${maxX},0&CQL_FILTER=${cqlFilter}`;
 
         setImageUrl(url);
-    }, [tab, open, wkt, currentMap]);
+    }, [tab, open, wkt, currentMap, profileStyle]);
 
 
     return (
@@ -182,12 +183,13 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
                             </Typography>
                             <Typography variant="body2" color="text.secondary">Este {lonBounds[1]}°</Typography>
                         </Box>
-                        <Box sx={{ flex: 1, width: '100%', bgcolor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                        <Box sx={{ flex: 1, width: '100%', bgcolor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
                             {imageUrl ? (
                                 <Box component="img" src={imageUrl} alt="Corte Transversal" sx={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                             ) : (
                                 <CircularProgress />
                             )}
+                            <MapLegend styleName={profileStyle} />
                         </Box>
                     </Box>
                 )}
