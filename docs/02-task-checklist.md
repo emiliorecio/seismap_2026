@@ -81,7 +81,7 @@
 - [x] `GET /api/maps/{id}`
 - [x] `GET /api/maps?userId={id}`
 - [x] `GET /api/maps/legend?name={sld}` ✅ proxy a GeoServer `GetLegendGraphic`
-- [ ] `POST /api/events/within` ⬜ pendiente (consulta espacial por polígono)
+- [x] `POST /api/events/within` (consulta espacial por polígono, `ST_Within`)
 
 ### 3.4 Styles ✅
 - [x] `POST /api/styles`
@@ -133,13 +133,13 @@
 - [x] Cargar mapa existente (lista clickeable)
 - [x] Eliminar mapa
 
-### 5.3 Eventos Sísmicos
-- [ ] Click en mapa → mostrar eventos de la ubicación (Phase siguiente)
-- [ ] Diálogo de detalle de evento
-- [ ] Mapa secundario de evento
+### 5.3 Eventos Sísmicos ✅
+- [x] Click en mapa → mostrar eventos de la ubicación (`singleclick` + GetFeatureInfo en `SeismapMapView.tsx`)
+- [x] Diálogo de detalle de evento (`EventDialog.tsx`)
+- [x] Mapa secundario de evento (tab "Corte Transversal" en `EventsWithinDialog.tsx`)
 
-### 5.4 Profundidad
-- [ ] Herramienta de polígono + mapa de profundidad (Phase siguiente)
+### 5.4 Profundidad ✅
+- [x] Herramienta de polígono (`Draw` interaction + `POST /api/events/within`) + mapa de profundidad (capa WMS `eventandaveragemagnitudes_depthlocation`, vista materializada en `V3__materialized_view_geoserver.sql`)
 
 ### 5.5 Admin ✅
 - [x] Página de listado de archivos [.data](file:///home/erecio/Documents/Projects/seismap/src/test/resources/datafiles/sample.data)
