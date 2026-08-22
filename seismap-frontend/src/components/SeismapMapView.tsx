@@ -23,6 +23,7 @@ interface SeismapMapViewProps {
     currentMap?: SeismapMap | null;
     styleName?: string;
     drawingMode?: boolean;
+    showLocalLayer?: boolean;
     showUsgsLayer?: boolean;
     onPolygonComplete?: (wkt: string) => void;
     onClearPolygon?: (clear: () => void) => void;
@@ -45,6 +46,7 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
     currentMap = null,
     styleName = 'seismap_default',
     drawingMode = false,
+    showLocalLayer = true,
     showUsgsLayer = false,
     onPolygonComplete,
     onClearPolygon,
@@ -74,7 +76,7 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
             ratio: 1,
         });
 
-        const wmsLayer = new ImageLayer({ source: wmsSource, opacity: 0.85 });
+        const wmsLayer = new ImageLayer({ source: wmsSource, opacity: 0.85, visible: showLocalLayer });
         wmsLayerRef.current = wmsLayer;
 
         const usgsSource = new ImageWMS({
@@ -153,7 +155,11 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
         };
     }, []);
 
-    // ── Toggle USGS historical events layer ─────────────────────────
+    // ── Toggle local/USGS historical events layers ──────────────────
+    useEffect(() => {
+        wmsLayerRef.current?.setVisible(showLocalLayer);
+    }, [showLocalLayer]);
+
     useEffect(() => {
         usgsLayerRef.current?.setVisible(showUsgsLayer);
     }, [showUsgsLayer]);

@@ -30,7 +30,10 @@ interface MapControlsPanelProps {
 }
 
 const MapControlsPanel: React.FC<MapControlsPanelProps> = ({ drawingMode, loadingEvents, onToggleDrawing }) => {
-    const { currentMap, updateCurrentMap, selectedStyle, setSelectedStyle, showUsgsLayer, setShowUsgsLayer } = useMapStore();
+    const {
+        currentMap, updateCurrentMap, selectedStyle, setSelectedStyle,
+        showLocalLayer, setShowLocalLayer, showUsgsLayer, setShowUsgsLayer,
+    } = useMapStore();
 
     if (!currentMap) {
         return (
@@ -320,7 +323,18 @@ const MapControlsPanel: React.FC<MapControlsPanelProps> = ({ drawingMode, loadin
                         </Select>
                     </FormControl>
                     <FormControlLabel
-                        sx={{ mt: 2 }}
+                        sx={{ mt: 2, display: 'flex' }}
+                        control={
+                            <Switch
+                                size="small"
+                                checked={showLocalLayer}
+                                onChange={(e) => setShowLocalLayer(e.target.checked)}
+                            />
+                        }
+                        label={<Typography variant="caption">Sismos catálogo local</Typography>}
+                    />
+                    <FormControlLabel
+                        sx={{ display: 'flex' }}
                         control={
                             <Switch
                                 size="small"

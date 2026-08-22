@@ -55,9 +55,12 @@ public class GeoServerAutoConfigService {
       publishLayer("eventandaveragemagnitudes_depth_live", "eventandaveragemagnitudes_depthlocation",
           "Eventos sísmicos — vista de profundidad");
       publishLayer("usgs_event", "usgs_events", "Sismos históricos (USGS)");
+      publishLayer("usgs_event_depth_live", "usgs_events_depthlocation",
+          "Sismos históricos (USGS) — vista de profundidad");
       uploadDefaultStyle();
       uploadThemedStyles();
       uploadUsgsStyle();
+      uploadUsgsDepthProfileStyle();
       log.info("GeoServer auto-configuration completed successfully");
     } catch (Exception e) {
       log.warn("GeoServer auto-configuration failed (GeoServer may not be running): {}", e.getMessage());
@@ -628,6 +631,34 @@ public class GeoServerAutoConfigService {
                   </Size>
                 </Graphic>
               </PointSymbolizer>
+            </Rule>
+            """);
+  }
+
+  /**
+   * Same depth-band colors as seismap_circles_depth_profile, so the
+   * cross-section reads as one unified "depth" view regardless of whether a
+   * point came from the local catalog or USGS. Size is scaled by `magnitude`
+   * (USGS events have no rankindex).
+   */
+  private void uploadUsgsDepthProfileStyle() {
+    uploadSldStyle("usgs_depth_profile", "USGS — Perfil de profundidad",
+        """
+            <Rule><Title>0-30 km</Title>
+              <ogc:Filter><ogc:PropertyIsLessThanOrEqualTo><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>30</ogc:Literal></ogc:PropertyIsLessThanOrEqualTo></ogc:Filter>
+              <PointSymbolizer><Geometry><ogc:PropertyName>depthlocation</ogc:PropertyName></Geometry><Graphic><Mark><WellKnownName>circle</WellKnownName><Fill><CssParameter name="fill">#F44336</CssParameter><CssParameter name="fill-opacity">0.7</CssParameter></Fill><Stroke><CssParameter name="stroke">#B71C1C</CssParameter><CssParameter name="stroke-width">1</CssParameter></Stroke></Mark><Size><ogc:Add><ogc:Mul><ogc:PropertyName>magnitude</ogc:PropertyName><ogc:Literal>4</ogc:Literal></ogc:Mul><ogc:Literal>3</ogc:Literal></ogc:Add></Size></Graphic></PointSymbolizer>
+            </Rule>
+            <Rule><Title>30-70 km</Title>
+              <ogc:Filter><ogc:And><ogc:PropertyIsGreaterThan><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>30</ogc:Literal></ogc:PropertyIsGreaterThan><ogc:PropertyIsLessThanOrEqualTo><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>70</ogc:Literal></ogc:PropertyIsLessThanOrEqualTo></ogc:And></ogc:Filter>
+              <PointSymbolizer><Geometry><ogc:PropertyName>depthlocation</ogc:PropertyName></Geometry><Graphic><Mark><WellKnownName>circle</WellKnownName><Fill><CssParameter name="fill">#9C27B0</CssParameter><CssParameter name="fill-opacity">0.7</CssParameter></Fill><Stroke><CssParameter name="stroke">#6A1B9A</CssParameter><CssParameter name="stroke-width">1</CssParameter></Stroke></Mark><Size><ogc:Add><ogc:Mul><ogc:PropertyName>magnitude</ogc:PropertyName><ogc:Literal>4</ogc:Literal></ogc:Mul><ogc:Literal>3</ogc:Literal></ogc:Add></Size></Graphic></PointSymbolizer>
+            </Rule>
+            <Rule><Title>70-300 km</Title>
+              <ogc:Filter><ogc:And><ogc:PropertyIsGreaterThan><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>70</ogc:Literal></ogc:PropertyIsGreaterThan><ogc:PropertyIsLessThanOrEqualTo><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>300</ogc:Literal></ogc:PropertyIsLessThanOrEqualTo></ogc:And></ogc:Filter>
+              <PointSymbolizer><Geometry><ogc:PropertyName>depthlocation</ogc:PropertyName></Geometry><Graphic><Mark><WellKnownName>circle</WellKnownName><Fill><CssParameter name="fill">#FFEB3B</CssParameter><CssParameter name="fill-opacity">0.7</CssParameter></Fill><Stroke><CssParameter name="stroke">#F9A825</CssParameter><CssParameter name="stroke-width">1</CssParameter></Stroke></Mark><Size><ogc:Add><ogc:Mul><ogc:PropertyName>magnitude</ogc:PropertyName><ogc:Literal>4</ogc:Literal></ogc:Mul><ogc:Literal>3</ogc:Literal></ogc:Add></Size></Graphic></PointSymbolizer>
+            </Rule>
+            <Rule><Title>+300 km</Title>
+              <ogc:Filter><ogc:PropertyIsGreaterThan><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>300</ogc:Literal></ogc:PropertyIsGreaterThan></ogc:Filter>
+              <PointSymbolizer><Geometry><ogc:PropertyName>depthlocation</ogc:PropertyName></Geometry><Graphic><Mark><WellKnownName>circle</WellKnownName><Fill><CssParameter name="fill">#2196F3</CssParameter><CssParameter name="fill-opacity">0.7</CssParameter></Fill><Stroke><CssParameter name="stroke">#1565C0</CssParameter><CssParameter name="stroke-width">1</CssParameter></Stroke></Mark><Size><ogc:Add><ogc:Mul><ogc:PropertyName>magnitude</ogc:PropertyName><ogc:Literal>4</ogc:Literal></ogc:Mul><ogc:Literal>3</ogc:Literal></ogc:Add></Size></Graphic></PointSymbolizer>
             </Rule>
             """);
   }

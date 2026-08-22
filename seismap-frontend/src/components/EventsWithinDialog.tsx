@@ -18,8 +18,10 @@ import 'ol/ol.css';
 import { useMapStore } from '../store/mapStore';
 import { buildCqlFilter } from '../utils/cqlFilter';
 import MapLegend from './MapLegend';
+import type { UsgsEventProperties } from './UsgsEventDialog';
 
 const DEPTH_LAYER = 'seismap:eventandaveragemagnitudes_depthlocation';
+const USGS_DEPTH_LAYER = 'seismap:usgs_events_depthlocation';
 const SIZE_STORAGE_KEY = 'seismap.eventsWithinDialog.size';
 const POSITION_STORAGE_KEY = 'seismap.eventsWithinDialog.position';
 const MIN_WIDTH = 520;
@@ -69,6 +71,7 @@ interface Props {
     onClose: () => void;
     onPageChange: (newPage: number) => void;
     onPointClick?: (eventId: number) => void;
+    onUsgsPointClick?: (properties: UsgsEventProperties) => void;
 }
 
 function formatDate(iso: string) {
@@ -78,7 +81,7 @@ function formatDate(iso: string) {
     });
 }
 
-const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, onPageChange, onPointClick }) => {
+const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, onPageChange, onPointClick, onUsgsPointClick }) => {
     const [tab, setTab] = useState(0);
     const [lonBounds, setLonBounds] = useState<[string, string]>(['', '']);
     const [crossSectionLoading, setCrossSectionLoading] = useState(true);
@@ -144,7 +147,7 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
         window.addEventListener('mouseup', onUp);
     };
 
-    const { currentMap } = useMapStore();
+    const { currentMap, showUsgsLayer } = useMapStore();
 
     const isPoints = currentMap?.style?.sld?.includes('points');
     const profileStyle = isPoints ? 'seismap_points_depth_profile' : 'seismap_circles_depth_profile';
@@ -203,9 +206,28 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
         wmsSource.on('imageloadend', () => setCrossSectionLoading(false));
         wmsSource.on('imageloaderror', () => setCrossSectionLoading(false));
 
+        // USGS points share the same depth color scheme, filtered by the same
+        // drawn polygon (but not the local catalog's magnitude/date filters,
+        // whose fields don't exist on usgs_event).
+        const usgsWmsSource = new ImageWMS({
+            url: '/geoserver/seismap/wms',
+            params: {
+                LAYERS: USGS_DEPTH_LAYER,
+                STYLES: 'usgs_depth_profile',
+                CQL_FILTER: `WITHIN(location, ${wkt})`,
+            },
+            serverType: 'geoserver',
+            ratio: 1,
+        });
+
+        const layers = [new ImageLayer({ source: wmsSource })];
+        if (showUsgsLayer) {
+            layers.push(new ImageLayer({ source: usgsWmsSource }));
+        }
+
         const map = new Map({
             target: crossSectionMapDivRef.current,
-            layers: [new ImageLayer({ source: wmsSource })],
+            layers,
             view: new View({
                 projection: 'EPSG:3857',
                 center: [(minX + maxX) / 2, -375000],
@@ -217,15 +239,32 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
         map.on('singleclick', (evt) => {
             const resolution = map.getView().getResolution();
             if (!resolution) return;
-            const url = wmsSource.getFeatureInfoUrl(evt.coordinate, resolution, 'EPSG:3857', {
+
+            const localUrl = wmsSource.getFeatureInfoUrl(evt.coordinate, resolution, 'EPSG:3857', {
                 INFO_FORMAT: 'application/json',
             });
-            if (!url) return;
-            fetch(url)
+            if (!localUrl) return;
+
+            fetch(localUrl)
                 .then((res) => res.json())
                 .then((data) => {
                     const eventId = data?.features?.[0]?.properties?.id;
-                    if (eventId && onPointClick) onPointClick(eventId);
+                    if (eventId) {
+                        onPointClick?.(eventId);
+                        return;
+                    }
+                    if (!showUsgsLayer) return;
+                    const usgsUrl = usgsWmsSource.getFeatureInfoUrl(evt.coordinate, resolution, 'EPSG:3857', {
+                        INFO_FORMAT: 'application/json',
+                    });
+                    if (!usgsUrl) return;
+                    fetch(usgsUrl)
+                        .then((res) => res.json())
+                        .then((data2) => {
+                            const properties = data2?.features?.[0]?.properties;
+                            if (properties) onUsgsPointClick?.(properties);
+                        })
+                        .catch((err) => console.error('Failed to get USGS cross-section feature info', err));
                 })
                 .catch((err) => console.error('Failed to get cross-section feature info', err));
         });
@@ -240,7 +279,7 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
             map.setTarget(undefined);
             crossSectionMapRef.current = null;
         };
-    }, [tab, open, wkt, currentMap, profileStyle, onPointClick]);
+    }, [tab, open, wkt, currentMap, profileStyle, showUsgsLayer, onPointClick, onUsgsPointClick]);
 
 
     return (

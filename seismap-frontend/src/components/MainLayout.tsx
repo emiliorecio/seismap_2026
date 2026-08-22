@@ -20,7 +20,9 @@ import MapControlsPanel from './MapControlsPanel';
 import MapLegend from './MapLegend';
 import EventsWithinDialog from './EventsWithinDialog';
 import EventDialog from './EventDialog';
+import UsgsEventDialog from './UsgsEventDialog';
 import type { EventSummary } from './EventsWithinDialog';
+import type { UsgsEventProperties } from './UsgsEventDialog';
 import type { Page } from '../services/seismap';
 import { useMapStore } from '../store/mapStore';
 import { mapService, eventService } from '../services/seismap';
@@ -38,9 +40,11 @@ const MainLayout: React.FC = () => {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [eventDetailId, setEventDetailId] = useState<number | null>(null);
     const [eventDetailOpen, setEventDetailOpen] = useState(false);
+    const [usgsEventDetail, setUsgsEventDetail] = useState<UsgsEventProperties | null>(null);
+    const [usgsEventDetailOpen, setUsgsEventDetailOpen] = useState(false);
     const clearPolygonRef = useRef<(() => void) | null>(null);
 
-    const { currentMap, setCurrentMap, savedMaps, setSavedMaps, selectedStyle, showUsgsLayer } = useMapStore();
+    const { currentMap, setCurrentMap, savedMaps, setSavedMaps, selectedStyle, showLocalLayer, showUsgsLayer } = useMapStore();
 
     useEffect(() => {
         (async () => {
@@ -129,6 +133,11 @@ const MainLayout: React.FC = () => {
         setEventDetailOpen(true);
     };
 
+    const handleUsgsPointClick = (properties: UsgsEventProperties) => {
+        setUsgsEventDetail(properties);
+        setUsgsEventDetailOpen(true);
+    };
+
     return (
         <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
             <AppBar position="fixed" sx={{ zIndex: (t) => t.zIndex.drawer + 1 }}>
@@ -201,6 +210,7 @@ const MainLayout: React.FC = () => {
                     currentMap={currentMap}
                     styleName={selectedStyle}
                     drawingMode={drawingMode}
+                    showLocalLayer={showLocalLayer}
                     showUsgsLayer={showUsgsLayer}
                     onPolygonComplete={handlePolygonComplete}
                     onClearPolygon={(fn) => { clearPolygonRef.current = fn; }}
@@ -230,6 +240,13 @@ const MainLayout: React.FC = () => {
                     }
                 }}
                 onPointClick={handlePointClick}
+                onUsgsPointClick={handleUsgsPointClick}
+            />
+
+            <UsgsEventDialog
+                open={usgsEventDetailOpen}
+                event={usgsEventDetail}
+                onClose={() => setUsgsEventDetailOpen(false)}
             />
 
             <EventDialog
