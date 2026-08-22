@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useRef } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     Button, Typography, Box, Grid, Link,
@@ -42,10 +42,22 @@ function formatDate(iso: string) {
 }
 
 const UsgsEventDialog: React.FC<Props> = ({ open, event, onClose }) => {
-    const mapRef = useRef<HTMLDivElement>(null);
+    const mapInstanceRef = useRef<Map | null>(null);
+    const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
-    useEffect(() => {
-        if (!open || !event || !mapRef.current) return;
+    // A callback ref (rather than useRef + useEffect) ties map creation
+    // directly to the container DOM node actually being attached, which
+    // Dialog's mount/transition timing made unreliable for a plain effect —
+    // the effect could run before the ref was set, and never re-ran since
+    // the ref itself isn't a reactive dependency.
+    const setMapContainer = useCallback((node: HTMLDivElement | null) => {
+        resizeObserverRef.current?.disconnect();
+        resizeObserverRef.current = null;
+        if (mapInstanceRef.current) {
+            mapInstanceRef.current.setTarget(undefined);
+            mapInstanceRef.current = null;
+        }
+        if (!node || !event) return;
 
         const center: [number, number] = [event.longitude, event.latitude];
         const markerFeature = new Feature({ geometry: new Point(center) });
@@ -62,22 +74,18 @@ const UsgsEventDialog: React.FC<Props> = ({ open, event, onClose }) => {
         const vectorLayer = new VectorLayer({ source: new VectorSource({ features: [markerFeature] }) });
 
         const map = new Map({
-            target: mapRef.current,
+            target: node,
             layers: [new TileLayer({ source: new OSM() }), vectorLayer],
             view: new View({ center, zoom: 6 }),
         });
+        mapInstanceRef.current = map;
 
-        // The dialog's open transition can still be resizing the map's
-        // container when this runs, leaving OL with a stale/zero size and no
-        // tiles ever drawn — force a recompute whenever the container settles.
+        // Belt-and-suspenders: force a resize recompute if the container's
+        // size settles after this point (e.g. the dialog is still animating).
         const resizeObserver = new ResizeObserver(() => map.updateSize());
-        resizeObserver.observe(mapRef.current);
-
-        return () => {
-            resizeObserver.disconnect();
-            map.setTarget(undefined);
-        };
-    }, [open, event]);
+        resizeObserver.observe(node);
+        resizeObserverRef.current = resizeObserver;
+    }, [event]);
 
     const [lonDeg, latDeg] = event ? toLonLat([event.longitude, event.latitude]) : [null, null];
 
@@ -94,7 +102,7 @@ const UsgsEventDialog: React.FC<Props> = ({ open, event, onClose }) => {
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 12 }}>
                             <Box
-                                ref={mapRef}
+                                ref={setMapContainer}
                                 sx={{
                                     width: '100%',
                                     height: 250,
