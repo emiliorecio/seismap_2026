@@ -6,10 +6,12 @@ interface MapStore {
     savedMaps: SeismapMap[];
     dataBounds: DataBounds | null;
     selectedStyle: string;
+    showUsgsLayer: boolean;
     setCurrentMap: (map: SeismapMap) => void;
     setSavedMaps: (maps: SeismapMap[]) => void;
     setDataBounds: (bounds: DataBounds) => void;
     setSelectedStyle: (style: string) => void;
+    setShowUsgsLayer: (show: boolean) => void;
     updateCurrentMap: (patch: Partial<SeismapMap>) => void;
 }
 
@@ -18,11 +20,13 @@ export const useMapStore = create<MapStore>((set) => ({
     savedMaps: [],
     dataBounds: null,
     selectedStyle: 'seismap_circles_magnitude',
+    showUsgsLayer: false,
 
     setCurrentMap: (map) => set({ currentMap: map }),
     setSavedMaps: (maps) => set({ savedMaps: maps }),
     setDataBounds: (bounds) => set({ dataBounds: bounds }),
     setSelectedStyle: (style) => set({ selectedStyle: style }),
+    setShowUsgsLayer: (show) => set({ showUsgsLayer: show }),
     updateCurrentMap: (patch) =>
         set((state) =>
             state.currentMap ? { currentMap: { ...state.currentMap, ...patch } } : {}

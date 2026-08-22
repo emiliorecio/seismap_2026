@@ -40,7 +40,7 @@ const MainLayout: React.FC = () => {
     const [eventDetailOpen, setEventDetailOpen] = useState(false);
     const clearPolygonRef = useRef<(() => void) | null>(null);
 
-    const { currentMap, setCurrentMap, savedMaps, setSavedMaps, selectedStyle } = useMapStore();
+    const { currentMap, setCurrentMap, savedMaps, setSavedMaps, selectedStyle, showUsgsLayer } = useMapStore();
 
     useEffect(() => {
         (async () => {
@@ -201,6 +201,7 @@ const MainLayout: React.FC = () => {
                     currentMap={currentMap}
                     styleName={selectedStyle}
                     drawingMode={drawingMode}
+                    showUsgsLayer={showUsgsLayer}
                     onPolygonComplete={handlePolygonComplete}
                     onClearPolygon={(fn) => { clearPolygonRef.current = fn; }}
                     onPointClick={handlePointClick}

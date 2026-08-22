@@ -1,6 +1,7 @@
 package com.seismap.controller;
 
 import com.seismap.service.DataLoadService;
+import com.seismap.service.UsgsImportService;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
@@ -14,9 +15,11 @@ import java.util.stream.Collectors;
 public class AdminController {
 
     private final DataLoadService dataLoadService;
+    private final UsgsImportService usgsImportService;
 
-    public AdminController(DataLoadService dataLoadService) {
+    public AdminController(DataLoadService dataLoadService, UsgsImportService usgsImportService) {
         this.dataLoadService = dataLoadService;
+        this.usgsImportService = usgsImportService;
     }
 
     @GetMapping("/data-files")
@@ -31,5 +34,10 @@ public class AdminController {
     @PostMapping("/load-data-file")
     public Map<String, Object> loadDataFile(@RequestParam String file) throws IOException {
         return dataLoadService.loadDataFile(file);
+    }
+
+    @PostMapping("/import-usgs")
+    public Map<String, Object> importUsgs() {
+        return usgsImportService.importHistoricalEvents();
     }
 }

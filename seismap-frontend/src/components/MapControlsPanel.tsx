@@ -30,7 +30,7 @@ interface MapControlsPanelProps {
 }
 
 const MapControlsPanel: React.FC<MapControlsPanelProps> = ({ drawingMode, loadingEvents, onToggleDrawing }) => {
-    const { currentMap, updateCurrentMap, selectedStyle, setSelectedStyle } = useMapStore();
+    const { currentMap, updateCurrentMap, selectedStyle, setSelectedStyle, showUsgsLayer, setShowUsgsLayer } = useMapStore();
 
     if (!currentMap) {
         return (
@@ -319,6 +319,17 @@ const MapControlsPanel: React.FC<MapControlsPanelProps> = ({ drawingMode, loadin
                             <MenuItem value="seismap_points_age">Puntos — Antigüedad</MenuItem>
                         </Select>
                     </FormControl>
+                    <FormControlLabel
+                        sx={{ mt: 2 }}
+                        control={
+                            <Switch
+                                size="small"
+                                checked={showUsgsLayer}
+                                onChange={(e) => setShowUsgsLayer(e.target.checked)}
+                            />
+                        }
+                        label={<Typography variant="caption">Sismos históricos USGS (últimos 20 años)</Typography>}
+                    />
                 </AccordionDetails>
             </Accordion>
 

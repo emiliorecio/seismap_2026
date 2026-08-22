@@ -23,6 +23,7 @@ interface SeismapMapViewProps {
     currentMap?: SeismapMap | null;
     styleName?: string;
     drawingMode?: boolean;
+    showUsgsLayer?: boolean;
     onPolygonComplete?: (wkt: string) => void;
     onClearPolygon?: (clear: () => void) => void;
     onPointClick?: (eventId: number) => void;
@@ -30,6 +31,7 @@ interface SeismapMapViewProps {
 
 const GEOSERVER_WMS_URL = '/geoserver/seismap/wms';
 const LAYER_NAME = 'seismap:eventandaveragemagnitudes';
+const USGS_LAYER_NAME = 'seismap:usgs_events';
 
 const POLYGON_STYLE = new Style({
     fill: new Fill({ color: 'rgba(33, 150, 243, 0.15)' }),
@@ -43,6 +45,7 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
     currentMap = null,
     styleName = 'seismap_default',
     drawingMode = false,
+    showUsgsLayer = false,
     onPolygonComplete,
     onClearPolygon,
     onPointClick,
@@ -50,6 +53,7 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
     const mapRef = useRef<HTMLDivElement>(null);
     const olMapRef = useRef<Map | null>(null);
     const wmsLayerRef = useRef<ImageLayer<ImageWMS> | null>(null);
+    const usgsLayerRef = useRef<ImageLayer<ImageWMS> | null>(null);
     const drawRef = useRef<Draw | null>(null);
     const drawEndTimeRef = useRef<number>(0);
     const vectorSourceRef = useRef<VectorSource<Feature<Geometry>>>(new VectorSource());
@@ -73,6 +77,15 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
         const wmsLayer = new ImageLayer({ source: wmsSource, opacity: 0.85 });
         wmsLayerRef.current = wmsLayer;
 
+        const usgsSource = new ImageWMS({
+            url: GEOSERVER_WMS_URL,
+            params: { LAYERS: USGS_LAYER_NAME, SRS: 'EPSG:900913', STYLES: 'usgs_magnitude' },
+            serverType: 'geoserver',
+            ratio: 1,
+        });
+        const usgsLayer = new ImageLayer({ source: usgsSource, opacity: 0.85, visible: showUsgsLayer });
+        usgsLayerRef.current = usgsLayer;
+
         const vectorLayer = new VectorLayer({
             source: vectorSourceRef.current,
             style: POLYGON_STYLE,
@@ -83,6 +96,7 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
             layers: [
                 new TileLayer({ source: new OSM() }),
                 wmsLayer,
+                usgsLayer,
                 vectorLayer,
             ],
             view: new View({
@@ -135,8 +149,14 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
             map.setTarget(undefined);
             olMapRef.current = null;
             wmsLayerRef.current = null;
+            usgsLayerRef.current = null;
         };
     }, []);
+
+    // ── Toggle USGS historical events layer ─────────────────────────
+    useEffect(() => {
+        usgsLayerRef.current?.setVisible(showUsgsLayer);
+    }, [showUsgsLayer]);
 
     // ── Update WMS params on filter/style change ───────────────────
     useEffect(() => {
