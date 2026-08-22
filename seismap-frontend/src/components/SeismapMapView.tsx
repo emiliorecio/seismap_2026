@@ -34,6 +34,18 @@ const GEOSERVER_WMS_URL = '/geoserver/seismap/wms';
 const LAYER_NAME = 'seismap:eventandaveragemagnitudes';
 const USGS_LAYER_NAME = 'seismap:usgs_events';
 
+/** Maps each local "Vista" style to its USGS equivalent, so the USGS overlay
+ * restyles along with the main layer instead of staying fixed. */
+const USGS_STYLE_MAP: Record<string, string> = {
+    seismap_default: 'usgs_circles_magnitude',
+    seismap_circles_magnitude: 'usgs_circles_magnitude',
+    seismap_circles_depth: 'usgs_circles_depth',
+    seismap_circles_age: 'usgs_circles_age',
+    seismap_points_magnitude: 'usgs_points_magnitude',
+    seismap_points_depth: 'usgs_points_depth',
+    seismap_points_age: 'usgs_points_age',
+};
+
 const POLYGON_STYLE = new Style({
     fill: new Fill({ color: 'rgba(33, 150, 243, 0.15)' }),
     stroke: new Stroke({ color: '#2196F3', width: 2, lineDash: [6, 3] }),
@@ -81,7 +93,7 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
 
         const usgsSource = new ImageWMS({
             url: GEOSERVER_WMS_URL,
-            params: { LAYERS: USGS_LAYER_NAME, SRS: 'EPSG:900913', STYLES: 'usgs_magnitude' },
+            params: { LAYERS: USGS_LAYER_NAME, SRS: 'EPSG:900913', STYLES: USGS_STYLE_MAP[styleName] ?? 'usgs_circles_magnitude' },
             serverType: 'geoserver',
             ratio: 1,
         });
@@ -181,6 +193,13 @@ const SeismapMapView: React.FC<SeismapMapViewProps> = ({
         currentMap?.maxMagnitudeType, currentMap?.maxMagnitude,
         styleName,
     ]);
+
+    // ── Restyle the USGS overlay to match the selected Vista style ──
+    useEffect(() => {
+        usgsLayerRef.current?.getSource()?.updateParams({
+            STYLES: USGS_STYLE_MAP[styleName] ?? 'usgs_circles_magnitude',
+        });
+    }, [styleName]);
 
     // ── Toggle Draw interaction ────────────────────────────────────
     useEffect(() => {

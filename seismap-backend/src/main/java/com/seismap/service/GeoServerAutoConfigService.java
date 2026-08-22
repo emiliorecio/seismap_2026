@@ -54,12 +54,13 @@ public class GeoServerAutoConfigService {
       // instead of defaulting to `location`.
       publishLayer("eventandaveragemagnitudes_depth_live", "eventandaveragemagnitudes_depthlocation",
           "Eventos sísmicos — vista de profundidad");
-      publishLayer("usgs_event", "usgs_events", "Sismos históricos (USGS)");
+      publishLayer("usgs_event_live", "usgs_events", "Sismos históricos (USGS)");
       publishLayer("usgs_event_depth_live", "usgs_events_depthlocation",
           "Sismos históricos (USGS) — vista de profundidad");
       uploadDefaultStyle();
       uploadThemedStyles();
       uploadUsgsStyle();
+      uploadUsgsThemedStyles();
       uploadUsgsDepthProfileStyle();
       log.info("GeoServer auto-configuration completed successfully");
     } catch (Exception e) {
@@ -631,6 +632,155 @@ public class GeoServerAutoConfigService {
                   </Size>
                 </Graphic>
               </PointSymbolizer>
+            </Rule>
+            """);
+  }
+
+  /**
+   * USGS equivalents of the local catalog's "Vista" style options, so
+   * switching styles on the main map also restyles the USGS overlay instead
+   * of leaving it stuck on a single fixed look. Colors mirror the local
+   * styles; sizing/thresholds are adapted to fields usgs_event actually has
+   * (magnitude, depth, age) — no rankindex normalization exists here.
+   */
+  private void uploadUsgsThemedStyles() {
+    uploadSldStyle("usgs_circles_magnitude", "USGS — Círculos por magnitud",
+        """
+            <Rule><Title>Magnitud</Title>
+              <PointSymbolizer>
+                <Graphic>
+                  <Mark>
+                    <WellKnownName>circle</WellKnownName>
+                    <Fill>
+                      <CssParameter name="fill">
+                        <ogc:Function name="categorize">
+                          <ogc:PropertyName>magnitude</ogc:PropertyName>
+                          <ogc:Literal>#00FF00</ogc:Literal>
+                          <ogc:Literal>4</ogc:Literal>
+                          <ogc:Literal>#7FFF00</ogc:Literal>
+                          <ogc:Literal>5</ogc:Literal>
+                          <ogc:Literal>#FFFF00</ogc:Literal>
+                          <ogc:Literal>6</ogc:Literal>
+                          <ogc:Literal>#FF7F00</ogc:Literal>
+                          <ogc:Literal>7</ogc:Literal>
+                          <ogc:Literal>#FF0000</ogc:Literal>
+                        </ogc:Function>
+                      </CssParameter>
+                      <CssParameter name="fill-opacity">0.7</CssParameter>
+                    </Fill>
+                    <Stroke><CssParameter name="stroke">#333333</CssParameter><CssParameter name="stroke-width">0.5</CssParameter></Stroke>
+                  </Mark>
+                  <Size>
+                    <ogc:Add><ogc:Mul><ogc:PropertyName>magnitude</ogc:PropertyName><ogc:Literal>4</ogc:Literal></ogc:Mul><ogc:Literal>3</ogc:Literal></ogc:Add>
+                  </Size>
+                </Graphic>
+              </PointSymbolizer>
+            </Rule>
+            """);
+
+    uploadSldStyle("usgs_circles_depth", "USGS — Círculos por profundidad",
+        """
+            <Rule><Title>0-30 km</Title>
+              <ogc:Filter><ogc:PropertyIsLessThanOrEqualTo><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>30</ogc:Literal></ogc:PropertyIsLessThanOrEqualTo></ogc:Filter>
+              <PointSymbolizer><Graphic><Mark><WellKnownName>circle</WellKnownName><Fill><CssParameter name="fill">#F44336</CssParameter><CssParameter name="fill-opacity">0.7</CssParameter></Fill><Stroke><CssParameter name="stroke">#B71C1C</CssParameter><CssParameter name="stroke-width">1</CssParameter></Stroke></Mark><Size><ogc:Add><ogc:Mul><ogc:PropertyName>magnitude</ogc:PropertyName><ogc:Literal>4</ogc:Literal></ogc:Mul><ogc:Literal>3</ogc:Literal></ogc:Add></Size></Graphic></PointSymbolizer>
+            </Rule>
+            <Rule><Title>30-70 km</Title>
+              <ogc:Filter><ogc:And><ogc:PropertyIsGreaterThan><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>30</ogc:Literal></ogc:PropertyIsGreaterThan><ogc:PropertyIsLessThanOrEqualTo><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>70</ogc:Literal></ogc:PropertyIsLessThanOrEqualTo></ogc:And></ogc:Filter>
+              <PointSymbolizer><Graphic><Mark><WellKnownName>circle</WellKnownName><Fill><CssParameter name="fill">#9C27B0</CssParameter><CssParameter name="fill-opacity">0.7</CssParameter></Fill><Stroke><CssParameter name="stroke">#6A1B9A</CssParameter><CssParameter name="stroke-width">1</CssParameter></Stroke></Mark><Size><ogc:Add><ogc:Mul><ogc:PropertyName>magnitude</ogc:PropertyName><ogc:Literal>4</ogc:Literal></ogc:Mul><ogc:Literal>3</ogc:Literal></ogc:Add></Size></Graphic></PointSymbolizer>
+            </Rule>
+            <Rule><Title>70-300 km</Title>
+              <ogc:Filter><ogc:And><ogc:PropertyIsGreaterThan><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>70</ogc:Literal></ogc:PropertyIsGreaterThan><ogc:PropertyIsLessThanOrEqualTo><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>300</ogc:Literal></ogc:PropertyIsLessThanOrEqualTo></ogc:And></ogc:Filter>
+              <PointSymbolizer><Graphic><Mark><WellKnownName>circle</WellKnownName><Fill><CssParameter name="fill">#FFEB3B</CssParameter><CssParameter name="fill-opacity">0.7</CssParameter></Fill><Stroke><CssParameter name="stroke">#F9A825</CssParameter><CssParameter name="stroke-width">1</CssParameter></Stroke></Mark><Size><ogc:Add><ogc:Mul><ogc:PropertyName>magnitude</ogc:PropertyName><ogc:Literal>4</ogc:Literal></ogc:Mul><ogc:Literal>3</ogc:Literal></ogc:Add></Size></Graphic></PointSymbolizer>
+            </Rule>
+            <Rule><Title>+300 km</Title>
+              <ogc:Filter><ogc:PropertyIsGreaterThan><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>300</ogc:Literal></ogc:PropertyIsGreaterThan></ogc:Filter>
+              <PointSymbolizer><Graphic><Mark><WellKnownName>circle</WellKnownName><Fill><CssParameter name="fill">#2196F3</CssParameter><CssParameter name="fill-opacity">0.7</CssParameter></Fill><Stroke><CssParameter name="stroke">#1565C0</CssParameter><CssParameter name="stroke-width">1</CssParameter></Stroke></Mark><Size><ogc:Add><ogc:Mul><ogc:PropertyName>magnitude</ogc:PropertyName><ogc:Literal>4</ogc:Literal></ogc:Mul><ogc:Literal>3</ogc:Literal></ogc:Add></Size></Graphic></PointSymbolizer>
+            </Rule>
+            """);
+
+    String ageRule = """
+        <Rule>
+          <PointSymbolizer>
+            <Graphic>
+              <Mark>
+                <WellKnownName>circle</WellKnownName>
+                <Fill>
+                  <CssParameter name="fill">
+                    <ogc:Function name="categorize">
+                      <ogc:PropertyName>age</ogc:PropertyName>
+                      <ogc:Literal>#FF0000</ogc:Literal>
+                      <ogc:Literal>3600</ogc:Literal>
+                      <ogc:Literal>#FF00FF</ogc:Literal>
+                      <ogc:Literal>86400</ogc:Literal>
+                      <ogc:Literal>#FFFF00</ogc:Literal>
+                      <ogc:Literal>604800</ogc:Literal>
+                      <ogc:Literal>#0000FF</ogc:Literal>
+                    </ogc:Function>
+                  </CssParameter>
+                  <CssParameter name="fill-opacity">0.75</CssParameter>
+                </Fill>
+                <Stroke/>
+              </Mark>
+              <Size>6</Size>
+            </Graphic>
+          </PointSymbolizer>
+        </Rule>
+        """;
+    // USGS always has a `place`, unlike the local catalog's mostly-empty
+    // `name` — so skip the local style's "label named events" sub-rule here,
+    // it would label nearly every point.
+    uploadSldStyle("usgs_circles_age", "USGS — Círculos por antigüedad", ageRule);
+    uploadSldStyle("usgs_points_age", "USGS — Puntos por antigüedad", ageRule);
+
+    uploadSldStyle("usgs_points_magnitude", "USGS — Puntos por magnitud",
+        """
+            <Rule><Title>Magnitud</Title>
+              <PointSymbolizer>
+                <Graphic>
+                  <Mark>
+                    <WellKnownName>circle</WellKnownName>
+                    <Fill>
+                      <CssParameter name="fill">
+                        <ogc:Function name="categorize">
+                          <ogc:PropertyName>magnitude</ogc:PropertyName>
+                          <ogc:Literal>#00FF00</ogc:Literal>
+                          <ogc:Literal>4</ogc:Literal>
+                          <ogc:Literal>#7FFF00</ogc:Literal>
+                          <ogc:Literal>5</ogc:Literal>
+                          <ogc:Literal>#FFFF00</ogc:Literal>
+                          <ogc:Literal>6</ogc:Literal>
+                          <ogc:Literal>#FF7F00</ogc:Literal>
+                          <ogc:Literal>7</ogc:Literal>
+                          <ogc:Literal>#FF0000</ogc:Literal>
+                        </ogc:Function>
+                      </CssParameter>
+                      <CssParameter name="fill-opacity">0.8</CssParameter>
+                    </Fill>
+                    <Stroke><CssParameter name="stroke">#333333</CssParameter><CssParameter name="stroke-width">0.5</CssParameter></Stroke>
+                  </Mark>
+                  <Size>8</Size>
+                </Graphic>
+              </PointSymbolizer>
+            </Rule>
+            """);
+
+    uploadSldStyle("usgs_points_depth", "USGS — Puntos por profundidad",
+        """
+            <Rule><Title>0-30 km</Title>
+              <ogc:Filter><ogc:PropertyIsLessThanOrEqualTo><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>30</ogc:Literal></ogc:PropertyIsLessThanOrEqualTo></ogc:Filter>
+              <PointSymbolizer><Graphic><Mark><WellKnownName>circle</WellKnownName><Fill><CssParameter name="fill">#F44336</CssParameter><CssParameter name="fill-opacity">0.8</CssParameter></Fill><Stroke><CssParameter name="stroke">#B71C1C</CssParameter><CssParameter name="stroke-width">1</CssParameter></Stroke></Mark><Size>8</Size></Graphic></PointSymbolizer>
+            </Rule>
+            <Rule><Title>30-70 km</Title>
+              <ogc:Filter><ogc:And><ogc:PropertyIsGreaterThan><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>30</ogc:Literal></ogc:PropertyIsGreaterThan><ogc:PropertyIsLessThanOrEqualTo><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>70</ogc:Literal></ogc:PropertyIsLessThanOrEqualTo></ogc:And></ogc:Filter>
+              <PointSymbolizer><Graphic><Mark><WellKnownName>circle</WellKnownName><Fill><CssParameter name="fill">#9C27B0</CssParameter><CssParameter name="fill-opacity">0.8</CssParameter></Fill><Stroke><CssParameter name="stroke">#6A1B9A</CssParameter><CssParameter name="stroke-width">1</CssParameter></Stroke></Mark><Size>8</Size></Graphic></PointSymbolizer>
+            </Rule>
+            <Rule><Title>70-300 km</Title>
+              <ogc:Filter><ogc:And><ogc:PropertyIsGreaterThan><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>70</ogc:Literal></ogc:PropertyIsGreaterThan><ogc:PropertyIsLessThanOrEqualTo><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>300</ogc:Literal></ogc:PropertyIsLessThanOrEqualTo></ogc:And></ogc:Filter>
+              <PointSymbolizer><Graphic><Mark><WellKnownName>circle</WellKnownName><Fill><CssParameter name="fill">#FFEB3B</CssParameter><CssParameter name="fill-opacity">0.8</CssParameter></Fill><Stroke><CssParameter name="stroke">#F9A825</CssParameter><CssParameter name="stroke-width">1</CssParameter></Stroke></Mark><Size>8</Size></Graphic></PointSymbolizer>
+            </Rule>
+            <Rule><Title>+300 km</Title>
+              <ogc:Filter><ogc:PropertyIsGreaterThan><ogc:PropertyName>depth</ogc:PropertyName><ogc:Literal>300</ogc:Literal></ogc:PropertyIsGreaterThan></ogc:Filter>
+              <PointSymbolizer><Graphic><Mark><WellKnownName>circle</WellKnownName><Fill><CssParameter name="fill">#2196F3</CssParameter><CssParameter name="fill-opacity">0.8</CssParameter></Fill><Stroke><CssParameter name="stroke">#1565C0</CssParameter><CssParameter name="stroke-width">1</CssParameter></Stroke></Mark><Size>8</Size></Graphic></PointSymbolizer>
             </Rule>
             """);
   }
