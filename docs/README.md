@@ -6,11 +6,10 @@
 
 | Archivo | Descripción |
 |:---|:---|
-| [00-original-migration-plan.md](./00-original-migration-plan.md) | Plan original de migración: análisis del legado, decisiones de stack, mapping de APIs |
-| [01-migration-plan.md](./01-migration-plan.md) | Arquitectura Docker y nginx del proyecto migrado |
+| [00-original-migration-plan.md](./00-original-migration-plan.md) | Histórico: plan original de migración (análisis del legado, decisiones de stack, mapping de APIs) |
 | [02-task-checklist.md](./02-task-checklist.md) | Checklist detallado de progreso por fase |
-| [03-geoserver-integration.md](./03-geoserver-integration.md) | Implementación de integración WMS con GeoServer |
-| [04-pending-features.md](./04-pending-features.md) | Funcionalidades pendientes: polígono de selección, detalle de evento |
+| [03-geoserver-integration.md](./03-geoserver-integration.md) | Implementación de integración WMS con GeoServer (arquitectura Docker/nginx vigente) |
+| [04-pending-features.md](./04-pending-features.md) | Funcionalidades pendientes (exportación KML/CSV) |
 
 ## Stack Tecnológico
 

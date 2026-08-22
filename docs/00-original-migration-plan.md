@@ -1,5 +1,8 @@
 # Seismap Migration Plan
 
+> [!NOTE]
+> Documento histórico: refleja el análisis y las decisiones tomadas al inicio de la migración (Feb 2026). La migración ya está completa — ver `docs/02-task-checklist.md` para el estado actual y `docs/03-geoserver-integration.md` para la arquitectura de GeoServer vigente.
+
 Modernize the 2011 Seismap application from Java 1.5 / Spring 3.2 / ExtJS to Java 21 / Spring Boot 3 / React + OpenLayers, containerized with Docker Compose.
 
 ---
@@ -22,7 +25,7 @@ Modernize the 2011 Seismap application from Java 1.5 / Spring 3.2 / ExtJS to Jav
 ### Frontend
 | Component | Details |
 |:---|:---|
-| Templating | JSPs ([map.jsp](file:///home/erecio/Documents/Projects/seismap/src/main/webapp/jsp/map.jsp), [home.jsp](file:///home/erecio/Documents/Projects/seismap/src/main/webapp/jsp/home.jsp), [admin.jsp](file:///home/erecio/Documents/Projects/seismap/src/main/webapp/jsp/admin.jsp), [data-files-list.jsp](file:///home/erecio/Documents/Projects/seismap/src/main/webapp/jsp/data-files-list.jsp)) |
+| Templating | JSPs (map.jsp, home.jsp, admin.jsp, data-files-list.jsp) |
 | UI Framework | ExtJS 3.x (Ext Designer generated) |
 | Mapping | OpenLayers classic + GeoExt + Google Maps API base layers |
 | State | ExtJS Stores (`EventStore`, `LocationEventStore`, `StyleStore`, etc.) |
@@ -40,7 +43,7 @@ Modernize the 2011 Seismap application from Java 1.5 / Spring 3.2 / ExtJS to Jav
 ## Domain Model Inventory
 
 ### Entities (12)
-[Application](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/ApplicationController.java#15-39), `ApplicationSettings`, `Agency`, [Category](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/CategoryController.java#15-39), [DataBounds](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/EventController.java#36-42), [Event](file:///home/erecio/Documents/Projects/seismap/src/main/webapp/resources/js/seismap.js#400-439), `EventAndAverageMagnitudes`, [EventInfo](file:///home/erecio/Documents/Projects/seismap/src/main/webapp/resources/js/seismap.js#981-1003), [Magnitude](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/EventController.java#43-49), `MagnitudeDataBounds`, [MagnitudeLimits](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/EventController.java#43-49), [Map](file:///home/erecio/Documents/Projects/seismap/src/main/webapp/resources/js/seismap.js#1003-1078), [Style](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/StyleController.java#15-38), [User](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/MapController.java#85-91) (+ `Identifiable` base, `ListManager` utility)
+Application, `ApplicationSettings`, `Agency`, Category, DataBounds, Event, `EventAndAverageMagnitudes`, EventInfo, Magnitude, `MagnitudeDataBounds`, MagnitudeLimits, Map, Style, User (+ `Identifiable` base, `ListManager` utility)
 
 ### Repositories (9)
 `AgencyRepository`, `ApplicationRepository`, `CategoryRepository`, `DataBoundsRepository`, `EventRepository`, `EventAndAverageMagnitudesRepository`, `MagnitudeLimitsRepository`, `MapRepository`, `StyleRepository`, `UserRepository`
@@ -48,13 +51,13 @@ Modernize the 2011 Seismap application from Java 1.5 / Spring 3.2 / ExtJS to Jav
 ### Services (7)
 | Service | Key Operations |
 |:---|:---|
-| `ApplicationService` | [get](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/ApplicationController.java#25-31), [getSettings](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/ApplicationController.java#32-38) |
-| `CategoryService` | [create](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/StyleController.java#25-31), [list](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/StyleController.java#32-37) |
-| `EventService` | [get](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/ApplicationController.java#25-31), [modify](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/MapController.java#73-78), [getDataBounds](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/EventController.java#36-42), [getMagnitudeLimits](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/EventController.java#43-49) |
-| `MapService` | [getDefault](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/MapController.java#48-54), [create](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/StyleController.java#25-31), [rename](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/MapController.java#61-66), [delete](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/MapController.java#67-72), [modify](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/MapController.java#73-78), [get](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/ApplicationController.java#25-31), [listByUser](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/MapController.java#85-91), [getLegend](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/MapController.java#92-107) |
-| `StyleService` | [create](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/StyleController.java#25-31), [list](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/StyleController.java#32-37) |
-| `UserService` | [create](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/StyleController.java#25-31) |
-| `DataLoadService` | [load](file:///home/erecio/Documents/Projects/seismap/src/main/webapp/resources/js/seismap.js#1131-1153) (bulk import from `.data` files) |
+| `ApplicationService` | get, getSettings |
+| `CategoryService` | create, list |
+| `EventService` | get, modify, getDataBounds, getMagnitudeLimits |
+| `MapService` | getDefault, create, rename, delete, modify, get, listByUser, getLegend |
+| `StyleService` | create, list |
+| `UserService` | create |
+| `DataLoadService` | load (bulk import from `.data` files) |
 
 ### Full API Endpoint Inventory (Legacy → New)
 | Legacy Route | Method | New REST Endpoint |
@@ -102,7 +105,7 @@ Modernize the 2011 Seismap application from Java 1.5 / Spring 3.2 / ExtJS to Jav
 ### Frontend (`seismap-frontend/`)
 - **React 18+** with **TypeScript**, bundled with **Vite**
 - **MUI (Material UI)** ✅ for UI components (DataGrid replaces ExtJS grids; Dialogs replace ExtJS windows)
-- **OpenLayers 10** ([ol](file:///home/erecio/Documents/Projects/seismap/src/main/java/com/seismap/controller/MapController.java#35-108) npm package) for map rendering (handles thousands of points via WebGL)
+- **OpenLayers 10** (ol npm package) for map rendering (handles thousands of points via WebGL)
 - **React Router** for page navigation
 - **Zustand** or **Redux Toolkit** for state management (replaces ExtJS Stores)
 - **Axios** for HTTP client
