@@ -229,7 +229,7 @@ seismap/
 │   │   └── types/          TypeScript types
 │   └── nginx.conf.template Nginx config proxy (producción)
 │
-├── data/                   Archivos .data (no versionados)
+├── data/                   Archivos .data
 ├── docker-compose.yml      Stack completo
-└── task.md                 Checklist de migración
+└── docs/02-task-checklist.md  Checklist de migración
 ```
