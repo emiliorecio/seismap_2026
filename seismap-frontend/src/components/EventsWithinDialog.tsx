@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     Button, Typography, Table, TableBody, TableCell,
@@ -9,9 +9,15 @@ import type { Page } from '../services/seismap';
 import PlaceIcon from '@mui/icons-material/Place';
 import { toLonLat } from 'ol/proj';
 import WKT from 'ol/format/WKT';
+import Map from 'ol/Map';
+import View from 'ol/View';
+import ImageLayer from 'ol/layer/Image';
+import ImageWMS from 'ol/source/ImageWMS';
+import 'ol/ol.css';
 import { useMapStore } from '../store/mapStore';
 import { buildCqlFilter } from '../utils/cqlFilter';
-import MapLegend from './MapLegend';
+
+const DEPTH_LAYER = 'seismap:eventandaveragemagnitudes_depthlocation';
 
 export interface EventSummary {
     id: number;
@@ -30,6 +36,7 @@ interface Props {
     wkt: string | null;
     onClose: () => void;
     onPageChange: (newPage: number) => void;
+    onPointClick?: (eventId: number) => void;
 }
 
 function formatDate(iso: string) {
@@ -39,15 +46,19 @@ function formatDate(iso: string) {
     });
 }
 
-const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, onPageChange }) => {
+const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, onPageChange, onPointClick }) => {
     const [tab, setTab] = useState(0);
-    const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [lonBounds, setLonBounds] = useState<[string, string]>(['', '']);
+    const [crossSectionLoading, setCrossSectionLoading] = useState(true);
+
+    const crossSectionMapDivRef = useRef<HTMLDivElement>(null);
+    const crossSectionMapRef = useRef<Map | null>(null);
 
     const { currentMap } = useMapStore();
 
     const isPoints = currentMap?.style?.sld?.includes('points');
     const profileStyle = isPoints ? 'seismap_points_depth_profile' : 'seismap_circles_depth_profile';
+    const legendUrl = `/api/maps/legend?name=${encodeURIComponent(profileStyle)}`;
 
     // Reset tab on close
     useEffect(() => {
@@ -56,10 +67,11 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
         }
     }, [open]);
 
+    // Build the interactive cross-section map (ImageWMS on the depth-projected view)
     useEffect(() => {
-        if (tab !== 1 || !open || !wkt) return;
+        if (tab !== 1 || !open || !wkt || !crossSectionMapDivRef.current) return;
 
-        setImageUrl(null); // Show loading state briefly
+        setCrossSectionLoading(true);
 
         const format = new WKT();
         const feature = format.readFeature(wkt);
@@ -87,13 +99,55 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
             const mapCql = buildCqlFilter(currentMap);
             if (mapCql) cqlParts.push(`(${mapCql})`);
         }
+        const cqlFilter = cqlParts.join(' AND ');
 
-        const cqlFilter = encodeURIComponent(cqlParts.join(' AND '));
+        const wmsSource = new ImageWMS({
+            url: '/geoserver/seismap/wms',
+            params: {
+                LAYERS: DEPTH_LAYER,
+                STYLES: profileStyle,
+                CQL_FILTER: cqlFilter,
+            },
+            serverType: 'geoserver',
+            ratio: 1,
+        });
+        wmsSource.on('imageloadend', () => setCrossSectionLoading(false));
+        wmsSource.on('imageloaderror', () => setCrossSectionLoading(false));
 
-        const url = `/geoserver/seismap/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image%2Fpng&TRANSPARENT=true&LAYERS=seismap%3Aeventandaveragemagnitudes_depthlocation&CRS=EPSG%3A3857&STYLES=${profileStyle}&WIDTH=1200&HEIGHT=600&BBOX=${minX},-750000,${maxX},0&CQL_FILTER=${cqlFilter}`;
+        const map = new Map({
+            target: crossSectionMapDivRef.current,
+            layers: [new ImageLayer({ source: wmsSource })],
+            view: new View({
+                projection: 'EPSG:3857',
+                center: [(minX + maxX) / 2, -375000],
+                zoom: 2,
+            }),
+        });
+        map.getView().fit([minX, -750000, maxX, 0], { size: map.getSize(), padding: [16, 16, 16, 16] });
 
-        setImageUrl(url);
-    }, [tab, open, wkt, currentMap, profileStyle]);
+        map.on('singleclick', (evt) => {
+            const resolution = map.getView().getResolution();
+            if (!resolution) return;
+            const url = wmsSource.getFeatureInfoUrl(evt.coordinate, resolution, 'EPSG:3857', {
+                INFO_FORMAT: 'application/json',
+            });
+            if (!url) return;
+            fetch(url)
+                .then((res) => res.json())
+                .then((data) => {
+                    const eventId = data?.features?.[0]?.properties?.id;
+                    if (eventId && onPointClick) onPointClick(eventId);
+                })
+                .catch((err) => console.error('Failed to get cross-section feature info', err));
+        });
+
+        crossSectionMapRef.current = map;
+
+        return () => {
+            map.setTarget(undefined);
+            crossSectionMapRef.current = null;
+        };
+    }, [tab, open, wkt, currentMap, profileStyle, onPointClick]);
 
 
     return (
@@ -175,21 +229,32 @@ const EventsWithinDialog: React.FC<Props> = ({ open, eventsPage, wkt, onClose, o
                 )}
 
                 {tab === 1 && (
-                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                         <Box sx={{ p: 1, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Typography variant="body2" color="text.secondary">Oeste {lonBounds[0]}°</Typography>
                             <Typography variant="body2" color="text.secondary">
-                                <strong>Profundidad (0 a 750 km) v/s Longitud</strong>
+                                <strong>Profundidad (0 a 750 km) v/s Longitud</strong> · clic en un punto para ver el detalle
                             </Typography>
                             <Typography variant="body2" color="text.secondary">Este {lonBounds[1]}°</Typography>
                         </Box>
-                        <Box sx={{ flex: 1, width: '100%', bgcolor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
-                            {imageUrl ? (
-                                <Box component="img" src={imageUrl} alt="Corte Transversal" sx={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                            ) : (
-                                <CircularProgress />
-                            )}
-                            <MapLegend styleName={profileStyle} />
+                        <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                            <Box sx={{ flex: 1, position: 'relative', bgcolor: '#ffffff' }}>
+                                <Box ref={crossSectionMapDivRef} sx={{ width: '100%', height: '100%', cursor: 'pointer' }} />
+                                {crossSectionLoading && (
+                                    <Box sx={{
+                                        position: 'absolute', inset: 0, display: 'flex',
+                                        alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(255,255,255,0.6)',
+                                    }}>
+                                        <CircularProgress />
+                                    </Box>
+                                )}
+                            </Box>
+                            <Box sx={{
+                                width: 170, flexShrink: 0, borderLeft: '1px solid #e0e0e0',
+                                bgcolor: '#ffffff', overflowY: 'auto', p: 1,
+                            }}>
+                                <Box component="img" src={legendUrl} alt="Leyenda" sx={{ width: '100%', display: 'block' }} />
+                            </Box>
                         </Box>
                     </Box>
                 )}

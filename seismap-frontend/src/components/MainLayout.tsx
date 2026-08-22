@@ -228,6 +228,7 @@ const MainLayout: React.FC = () => {
                         fetchPolygonEvents(currentWkt, newPage);
                     }
                 }}
+                onPointClick={handlePointClick}
             />
 
             <EventDialog
