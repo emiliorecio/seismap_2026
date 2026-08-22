@@ -67,7 +67,14 @@ const UsgsEventDialog: React.FC<Props> = ({ open, event, onClose }) => {
             view: new View({ center, zoom: 6 }),
         });
 
+        // The dialog's open transition can still be resizing the map's
+        // container when this runs, leaving OL with a stale/zero size and no
+        // tiles ever drawn — force a recompute whenever the container settles.
+        const resizeObserver = new ResizeObserver(() => map.updateSize());
+        resizeObserver.observe(mapRef.current);
+
         return () => {
+            resizeObserver.disconnect();
             map.setTarget(undefined);
         };
     }, [open, event]);
