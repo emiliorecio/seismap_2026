@@ -44,10 +44,11 @@ Por defecto, la aplicación se levanta en modo **producción**. Esto significa q
 
 Para levantar el proyecto en modo **desarrollo** y habilitar el acceso a estas herramientas:
 
-1. Creá o editá el archivo `.env` en la raíz del proyecto (junto a `docker-compose.yml`) y agregá la siguiente variable:
+1. Copiá `.env.example` a `.env` en la raíz del proyecto (junto a `docker-compose.yml`) si todavía no lo hiciste, y editá la variable:
    ```env
    APP_PROFILE=development
    ```
+   `.env` no se versiona (está en `.gitignore`) porque ahí también van las contraseñas — ver [Variables de entorno](#variables-de-entorno-docker-compose) y [Seguridad](#seguridad).
 2. Ejecutá el comando de Docker Compose forzando la reconstrucción del frontend (para inyectar la variable):
    ```bash
    docker compose up -d --build
@@ -149,13 +150,19 @@ tail -f /var/log/nginx/access.log
 
 ### Conectar a la Base de Datos (PostGIS)
 
-Podés conectarte a la base de datos PostgreSQL/PostGIS del contenedor desde cualquier cliente externo (como DBeaver, pgAdmin, DataGrip, etc.) utilizando las siguientes credenciales expuestas en tu red local (puerto `5432`):
+El puerto de Postgres (`5432`) está publicado solo en loopback (`127.0.0.1`), así que podés conectarte con cualquier cliente externo (DBeaver, pgAdmin, DataGrip, etc.) **desde la misma máquina** donde corre Docker:
 
 - **Host**: `localhost` o `127.0.0.1`
 - **Puerto**: `5432`
 - **Base de Datos**: `seismap`
-- **Usuario**: `seismap`
-- **Contraseña**: `seismap`
+- **Usuario**: el valor de `POSTGRES_USER` en tu `.env` (`seismap` por defecto)
+- **Contraseña**: el valor de `POSTGRES_PASSWORD` en tu `.env`
+
+Si el proyecto corre en un servidor remoto (por ejemplo la VM de producción), conectate a través de un túnel SSH en vez de exponer el puerto a internet:
+```bash
+ssh -L 5432:localhost:5432 usuario@tu-servidor
+```
+y despues apuntá tu cliente a `localhost:5432` como si fuera local.
 
 > [!NOTE]
 > La base de datos incluye la extensión `postgis` habilitada y expone las vistas espacializadas o vistas materializadas de `eventandaveragemagnitudes` utilizadas por GeoServer.
@@ -193,12 +200,15 @@ El proxy de Vite redirige `/api/*` y `/layerServer/*` al backend en `:8080`.
 
 ## Variables de entorno (docker-compose)
 
+Definilas en tu `.env` (copiá `.env.example` como punto de partida).
+
 | Variable | Default | Descripción |
 |---|---|---|
 | `APP_PROFILE` | `production` | Perfil de ejecución. `production` oculta Swagger, GeoServer y la página de admin. `development` los habilita. Se aplica al backend (Spring profile) y al frontend (build arg + nginx). |
-| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://postgres:5432/seismap` | URL de conexión a PostgreSQL |
-| `SPRING_DATASOURCE_USERNAME` | `seismap` | Usuario de BD |
-| `SPRING_DATASOURCE_PASSWORD` | `seismap` | Password de BD |
+| `POSTGRES_USER` | `seismap` | Usuario de PostgreSQL. Usado por el contenedor `postgres` y por el backend (`SPRING_DATASOURCE_USERNAME`). |
+| `POSTGRES_PASSWORD` | `seismap` | Contraseña de PostgreSQL. **Cambiala antes de deployar en cualquier servidor accesible desde afuera.** |
+| `GEOSERVER_ADMIN_USER` | `admin` | Usuario admin de GeoServer. Usado por el contenedor `geoserver` y por el backend para autenticarse contra la REST API de GeoServer. |
+| `GEOSERVER_ADMIN_PASSWORD` | `geoserver` | Contraseña admin de GeoServer. **Cambiala también** — `admin`/`geoserver` es la credencial default de GeoServer, ampliamente conocida. |
 | `SEISMAP_GEOSERVER_URL` | `http://geoserver:8080/geoserver` | URL interna de GeoServer |
 | `SEISMAP_DATA_FILES_DIRECTORY` | `/app/data` | Directorio de archivos `.data` para carga admin |
 
@@ -206,6 +216,19 @@ El proxy de Vite redirige `/api/*` y `/layerServer/*` al backend en `:8080`.
 
 Colocá los archivos `.data` en la carpeta `data/` en la raíz del proyecto.
 Luego accedé a `http://localhost:3000/admin` para cargarlos desde la UI.
+
+## Seguridad
+
+Antes de levantar esto en un servidor accesible desde internet (no solo tu red local):
+
+1. **Cambiá las contraseñas por defecto.** Copiá `.env.example` a `.env` y definí `POSTGRES_PASSWORD` y `GEOSERVER_ADMIN_PASSWORD` con valores propios — los defaults (`seismap`, `geoserver`) son públicos (están en este mismo repo) y `admin`/`geoserver` además es la credencial default conocida de GeoServer.
+2. **Usá siempre `APP_PROFILE=production`** en el servidor — oculta Swagger, la UI de GeoServer y la consola `/admin`, tanto en nginx como a nivel Spring (`springdoc.swagger-ui.enabled=false`).
+3. **No publiques el puerto de Postgres a internet.** `docker-compose.yml` ya lo ata a `127.0.0.1` — no lo cambies a `"5432:5432"` en un host público. Para administrar la BD de forma remota, usá un túnel SSH (ver [Conectar a la Base de Datos](#conectar-a-la-base-de-datos-postgis)).
+4. **La REST API de GeoServer y los endpoints `/api/admin/*` del backend están bloqueados por nginx en modo producción** (devuelven 404), porque no tienen autenticación propia. Si necesitás disparar una carga de datos o la importación de USGS en el servidor, hacelo desde adentro del contenedor en vez de por la URL pública:
+   ```bash
+   docker exec seismap-backend wget -qO- --post-data='' http://localhost:8080/api/admin/import-usgs
+   ```
+5. Este proyecto **no tiene autenticación de usuarios** (queda para una iteración futura — ver `docs/00-original-migration-plan.md`). Todo lo que quede accesible públicamente en modo `production` (el mapa, las capas WMS/WFS) es de solo lectura desde la perspectiva de un visitante externo; los puntos 3 y 4 cubren las superficies de escritura/administración.
 
 ## Estructura del proyecto
 

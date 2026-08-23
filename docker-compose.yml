@@ -5,14 +5,19 @@ services:
     container_name: seismap-postgres
     environment:
       POSTGRES_DB: seismap
-      POSTGRES_USER: seismap
-      POSTGRES_PASSWORD: seismap
+      POSTGRES_USER: ${POSTGRES_USER:-seismap}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-seismap}
     ports:
-      - "5432:5432"
+      # Bound to loopback only — the backend reaches Postgres over the internal
+      # Docker network and never needs this published. Kept for local tools
+      # (DBeaver, psql) on the same machine; use an SSH tunnel to reach it on
+      # a remote host. Do NOT change this to "5432:5432" on an internet-facing
+      # host — that would expose the database directly to the internet.
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U seismap"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-seismap}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -22,8 +27,8 @@ services:
     image: kartoza/geoserver:2.28.2
     container_name: seismap-geoserver
     environment:
-      GEOSERVER_ADMIN_USER: admin
-      GEOSERVER_ADMIN_PASSWORD: geoserver
+      GEOSERVER_ADMIN_USER: ${GEOSERVER_ADMIN_USER:-admin}
+      GEOSERVER_ADMIN_PASSWORD: ${GEOSERVER_ADMIN_PASSWORD:-geoserver}
       GEOSERVER_DATA_DIR: /opt/geoserver/data_dir
       # Disable CSRF check so proxied requests from nginx work
       GEOSERVER_CSRF_WHITELIST: "*"
@@ -49,12 +54,13 @@ services:
     container_name: seismap-backend
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/seismap
-      SPRING_DATASOURCE_USERNAME: seismap
-      SPRING_DATASOURCE_PASSWORD: seismap
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-seismap}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-seismap}
       SEISMAP_GEOSERVER_URL: http://geoserver:8080/geoserver
+      SEISMAP_GEOSERVER_ADMIN_USER: ${GEOSERVER_ADMIN_USER:-admin}
+      SEISMAP_GEOSERVER_ADMIN_PASSWORD: ${GEOSERVER_ADMIN_PASSWORD:-geoserver}
       SEISMAP_DATA_FILES_DIRECTORY: /app/data
       SPRING_PROFILES_ACTIVE: ${APP_PROFILE:-production}
-      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     volumes:
       - ./data:/app/data:ro
     depends_on:
