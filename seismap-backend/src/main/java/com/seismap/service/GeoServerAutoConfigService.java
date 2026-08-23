@@ -3,6 +3,7 @@ package com.seismap.service;
 import com.seismap.config.GeoServerProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatusCode;
@@ -10,18 +11,18 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-
 /**
  * Automatically configures GeoServer on application startup:
  * - Creates workspace (if not exists)
- * - Creates PostGIS datastore (if not exists)
+ * - Creates/updates the PostGIS datastore connection
  * - Publishes feature types / layers (if not exist)
  * - Uploads a default SLD style (if not exists)
  *
- * All operations are idempotent — safe to run on every startup.
+ * All operations are idempotent — safe to run on every startup. The datastore
+ * connection is re-synced on every startup (not just created once) so that
+ * rotating the Postgres password and restarting is enough to keep GeoServer
+ * able to reach the database — see V9 history: a password rotation without
+ * this left the datastore stuck on the old password until fixed by hand.
  */
 @Service
 public class GeoServerAutoConfigService {
@@ -29,12 +30,19 @@ public class GeoServerAutoConfigService {
   private static final Logger log = LoggerFactory.getLogger(GeoServerAutoConfigService.class);
 
   private final GeoServerProperties props;
-  private final DataSource dataSource;
   private final RestClient restClient;
 
-  public GeoServerAutoConfigService(GeoServerProperties props, DataSource dataSource) {
+  @Value("${spring.datasource.url}")
+  private String datasourceUrl;
+
+  @Value("${spring.datasource.username}")
+  private String datasourceUsername;
+
+  @Value("${spring.datasource.password}")
+  private String datasourcePassword;
+
+  public GeoServerAutoConfigService(GeoServerProperties props) {
     this.props = props;
-    this.dataSource = dataSource;
     this.restClient = RestClient.builder()
         .baseUrl(props.getUrl() + "/rest")
         .defaultHeaders(headers -> headers.setBasicAuth(props.getAdminUser(), props.getAdminPassword()))
@@ -94,32 +102,25 @@ public class GeoServerAutoConfigService {
 
   private void createDatastore() {
     String uri = "/workspaces/" + props.getWorkspace() + "/datastores/" + props.getDatastoreName();
-    if (resourceExists(uri)) {
-      log.debug("Datastore '{}' already exists", props.getDatastoreName());
-      return;
-    }
+    boolean exists = resourceExists(uri);
 
-    // Resolve actual DB connection parameters from the DataSource
+    // Parse host/port/database straight out of spring.datasource.url
+    // (jdbc:postgresql://host:port/db) — username/password come directly
+    // from spring.datasource.* too, since a JDBC DataSource never exposes
+    // the password it's already holding a live connection with.
     String dbHost = "postgres";
     String dbPort = "5432";
     String dbName = "seismap";
-    String dbUser = "seismap";
-    String dbPassword = "seismap";
 
-    try (Connection conn = dataSource.getConnection()) {
-      DatabaseMetaData meta = conn.getMetaData();
-      String url = meta.getURL(); // jdbc:postgresql://host:port/db
-      if (url != null && url.startsWith("jdbc:postgresql://")) {
-        String rest = url.substring("jdbc:postgresql://".length());
-        String[] parts = rest.split("/", 2);
-        String[] hostPort = parts[0].split(":", 2);
-        dbHost = hostPort[0];
-        dbPort = hostPort.length > 1 ? hostPort[1] : "5432";
-        dbName = parts.length > 1 ? parts[1].split("\\?")[0] : "seismap";
-        dbUser = meta.getUserName();
-      }
-    } catch (Exception e) {
-      log.warn("Could not resolve DB metadata, using defaults: {}", e.getMessage());
+    if (datasourceUrl != null && datasourceUrl.startsWith("jdbc:postgresql://")) {
+      String rest = datasourceUrl.substring("jdbc:postgresql://".length());
+      String[] parts = rest.split("/", 2);
+      String[] hostPort = parts[0].split(":", 2);
+      dbHost = hostPort[0];
+      dbPort = hostPort.length > 1 ? hostPort[1] : "5432";
+      dbName = parts.length > 1 ? parts[1].split("\\?")[0] : "seismap";
+    } else {
+      log.warn("Could not parse spring.datasource.url ('{}'), using defaults", datasourceUrl);
     }
 
     String json = """
@@ -141,16 +142,30 @@ public class GeoServerAutoConfigService {
             }
           }
         }
-        """.formatted(props.getDatastoreName(), dbHost, dbPort, dbName, dbUser, dbPassword);
+        """.formatted(props.getDatastoreName(), dbHost, dbPort, dbName, datasourceUsername, datasourcePassword);
 
-    restClient.post()
-        .uri("/workspaces/" + props.getWorkspace() + "/datastores")
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(json)
-        .retrieve()
-        .toBodilessEntity();
-
-    log.info("Created GeoServer PostGIS datastore: {}", props.getDatastoreName());
+    if (exists) {
+      // Always re-sync (not just create-once): if Postgres's password gets
+      // rotated and .env updated to match, this keeps GeoServer's own stored
+      // datastore credentials in sync on the next restart instead of leaving
+      // it stuck on the old password (which breaks every WMS/WFS request
+      // with an opaque "Cannot create PoolableConnectionFactory" error).
+      restClient.put()
+          .uri(uri)
+          .contentType(MediaType.APPLICATION_JSON)
+          .body(json)
+          .retrieve()
+          .toBodilessEntity();
+      log.info("Synced GeoServer PostGIS datastore connection: {}", props.getDatastoreName());
+    } else {
+      restClient.post()
+          .uri("/workspaces/" + props.getWorkspace() + "/datastores")
+          .contentType(MediaType.APPLICATION_JSON)
+          .body(json)
+          .retrieve()
+          .toBodilessEntity();
+      log.info("Created GeoServer PostGIS datastore: {}", props.getDatastoreName());
+    }
   }
 
   // ─── Feature Type (Layer) ────────────────────────────────────────────────────
