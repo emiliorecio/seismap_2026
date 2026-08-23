@@ -671,13 +671,13 @@ public class GeoServerAutoConfigService {
                         <ogc:Function name="categorize">
                           <ogc:PropertyName>magnitude</ogc:PropertyName>
                           <ogc:Literal>#00FF00</ogc:Literal>
-                          <ogc:Literal>4</ogc:Literal>
+                          <ogc:Literal>2.5</ogc:Literal>
                           <ogc:Literal>#7FFF00</ogc:Literal>
                           <ogc:Literal>5</ogc:Literal>
                           <ogc:Literal>#FFFF00</ogc:Literal>
-                          <ogc:Literal>6</ogc:Literal>
+                          <ogc:Literal>7.5</ogc:Literal>
                           <ogc:Literal>#FF7F00</ogc:Literal>
-                          <ogc:Literal>7</ogc:Literal>
+                          <ogc:Literal>10</ogc:Literal>
                           <ogc:Literal>#FF0000</ogc:Literal>
                         </ogc:Function>
                       </CssParameter>
@@ -759,13 +759,13 @@ public class GeoServerAutoConfigService {
                         <ogc:Function name="categorize">
                           <ogc:PropertyName>magnitude</ogc:PropertyName>
                           <ogc:Literal>#00FF00</ogc:Literal>
-                          <ogc:Literal>4</ogc:Literal>
+                          <ogc:Literal>2.5</ogc:Literal>
                           <ogc:Literal>#7FFF00</ogc:Literal>
                           <ogc:Literal>5</ogc:Literal>
                           <ogc:Literal>#FFFF00</ogc:Literal>
-                          <ogc:Literal>6</ogc:Literal>
+                          <ogc:Literal>7.5</ogc:Literal>
                           <ogc:Literal>#FF7F00</ogc:Literal>
-                          <ogc:Literal>7</ogc:Literal>
+                          <ogc:Literal>10</ogc:Literal>
                           <ogc:Literal>#FF0000</ogc:Literal>
                         </ogc:Function>
                       </CssParameter>
