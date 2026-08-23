@@ -85,8 +85,13 @@ services:
       APP_PROFILE: ${APP_PROFILE:-production}
     ports:
       - "3000:80"
+      # HTTPS for the internet-facing DuckDNS domain. Certs are issued/renewed
+      # on the host via certbot (DNS-01 through the DuckDNS API — see
+      # README.md#https-tls) and bind-mounted in read-only.
+      - "3443:443"
     volumes:
       - /var/log/nginx:/var/log/nginx
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       backend:
         condition: service_healthy

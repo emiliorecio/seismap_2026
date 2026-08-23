@@ -229,6 +229,45 @@ Antes de levantar esto en un servidor accesible desde internet (no solo tu red l
    docker exec seismap-backend wget -qO- --post-data='' http://localhost:8080/api/admin/import-usgs
    ```
 5. Este proyecto **no tiene autenticación de usuarios** (queda para una iteración futura — ver `docs/00-original-migration-plan.md`). Todo lo que quede accesible públicamente en modo `production` (el mapa, las capas WMS/WFS) es de solo lectura desde la perspectiva de un visitante externo; los puntos 3 y 4 cubren las superficies de escritura/administración.
+6. **Servir la app por HTTPS en cualquier host accesible desde internet** — ver la sección [HTTPS / TLS](#https--tls) debajo. Sin esto, todo el tráfico (incluidas eventuales cargas de datos desde `/admin`) viaja sin cifrar.
+
+## HTTPS / TLS
+
+El contenedor `frontend` expone tanto HTTP (puerto interno `80`) como HTTPS (puerto interno `443`) en el mismo nginx — ver `seismap-frontend/nginx.prod.conf` / `nginx.dev.conf`. En `docker-compose.yml` estos se publican como `3000:80` y `3443:443`.
+
+### Cómo se emite el certificado
+
+El certificado se pide y renueva con **Certbot corriendo directamente en el host** (no en un contenedor) usando **validación DNS-01 contra la API de DuckDNS**, así que no hace falta abrir el puerto 80 al público:
+
+```bash
+sudo apt-get install -y certbot
+
+sudo certbot certonly \
+  --manual \
+  --preferred-challenges dns \
+  --manual-auth-hook /ruta/a/certbot-auth-hook.sh \
+  --manual-cleanup-hook /ruta/a/certbot-cleanup-hook.sh \
+  -d TU-SUBDOMINIO.duckdns.org \
+  --deploy-hook "docker exec seismap-frontend nginx -s reload" \
+  --agree-tos -m tu-email@ejemplo.com --non-interactive
+```
+
+Los scripts `certbot-auth-hook.sh` / `certbot-cleanup-hook.sh` publican y limpian el TXT `_acme-challenge` llamando a `https://www.duckdns.org/update?...&txt=...` con el mismo token que ya usás para mantener la IP actualizada — no están versionados en este repo porque contienen ese token; viven junto al script de actualización de DuckDNS en el host (p. ej. `~/duckdns/`).
+
+Certbot instala su propio timer de renovación automática (`certbot.timer`, vía el paquete de `apt`); el `--deploy-hook` queda guardado en `/etc/letsencrypt/renewal/*.conf` y recarga nginx solo después de cada renovación exitosa.
+
+### Cómo lo consume el contenedor
+
+`docker-compose.yml` monta `/etc/letsencrypt:/etc/letsencrypt:ro` (de solo lectura) en el contenedor `frontend`. Al arrancar, `docker-entrypoint.sh`:
+
+- si encuentra `/etc/letsencrypt/live/<dominio>/{fullchain,privkey}.pem`, los symlinkea a las rutas fijas que usa nginx (`/etc/nginx/ssl/*.pem`);
+- si no (por ejemplo en una máquina de desarrollo local, sin certificado real), genera un certificado autofirmado de una sola vez, para que nginx igual pueda arrancar y servir HTTPS localmente (con warning de seguridad esperable en el navegador).
+
+Si cambiás el dominio, actualizá el nombre `erecio.duckdns.org` hardcodeado en `nginx.prod.conf`, `nginx.dev.conf` y `docker-entrypoint.sh`.
+
+### Puertos en el router
+
+Como el puerto 80/443 estándar no está expuesto en este deployment, el acceso público es por un puerto no estándar reenviado en el router de casa hacia la IP interna de la VM, por ejemplo `TCP 3443 → <ip-interna>:3443`. Ajustá el número de puerto (y el mapeo en `docker-compose.yml`) según lo que hayas configurado ahí.
 
 ## Estructura del proyecto
 
