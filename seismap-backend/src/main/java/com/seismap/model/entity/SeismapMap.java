@@ -1,5 +1,6 @@
 package com.seismap.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.seismap.model.enums.*;
 import jakarta.persistence.*;
 import org.locationtech.jts.geom.Point;
@@ -133,6 +134,11 @@ public class SeismapMap {
         return id;
     }
 
+    // Excluded from JSON: the frontend only ever filters maps by a userId query
+    // param, never reads a nested user object, and serializing it would walk
+    // back into User.getMaps() — a circular reference — and risk exposing
+    // User.passwordHash-adjacent fields if that guard is ever loosened.
+    @JsonIgnore
     public User getUser() {
         return user;
     }
